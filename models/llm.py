@@ -15,7 +15,7 @@ class OllamaClient:
         self.model = PRIMARY_MODEL
         self.draft_model = DRAFT_MODEL
 
-    async def generate_stream(self, prompt: str, model_override: str = None):
+    async def generate_stream(self, prompt: str, model_override: str = None, temperature: float = 0.2, max_tokens: int = 2048):
         """Asynchronously stream tokens from the Ollama server."""
         model_to_use = model_override or self.model
         
@@ -23,21 +23,18 @@ class OllamaClient:
             req_data = {
                 "model": model_to_use,
                 "prompt": prompt,
-                "max_tokens": 2048,
-                "temperature": 0.2,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
                 "stream": True
             }
             
             # Use a longer timeout for the streaming setup, and no timeout for the read
             async with client.stream("POST", f"{self.base_url}/completions", json=req_data, timeout=None) as response:
-                print(f"Ollama Stream Connected: HTT{response.status_code}")
                 response.raise_for_status()
                 async for chunk in response.aiter_lines():
                     if not chunk:
                         continue
                         
-                    # print(f"Raw Chunk: {chunk}")
-                    
                     # OpenAI /v1/completions compat mode sends "data: {...}"
                     if chunk.startswith("data: "):
                         data_str = chunk[6:]
@@ -57,13 +54,11 @@ class OllamaClient:
                         if text:
                             yield text
                     except json.JSONDecodeError as e:
-                        print(f"JSON Decode Error on chunk: {data_str} -> {e}")
                         continue
                     except Exception as e:
-                        print(f"Unexpected streaming parsing error: {e}")
                         continue
 
-    async def generate(self, prompt: str, model_override: str = None, max_tokens: int = 512) -> str:
+    async def generate(self, prompt: str, model_override: str = None, max_tokens: int = 2048, temperature: float = 0.7) -> str:
         """Standard async generation (used for HyDE/HyPE with 7B)."""
         model_to_use = model_override or self.draft_model
         
@@ -72,11 +67,15 @@ class OllamaClient:
                 "model": model_to_use,
                 "prompt": prompt,
                 "max_tokens": max_tokens,
-                "temperature": 0.7,
+                "temperature": temperature,
                 "stream": False
             }
             response = await client.post(f"{self.base_url}/completions", json=req_data, timeout=180.0)
             response.raise_for_status()
-            return response.json()["choices"][0]["text"]
+            
+            data_json = response.json()
+            if "choices" in data_json and len(data_json["choices"]) > 0:
+                return data_json["choices"][0]["text"]
+            return data_json.get("response", "")
 
 vllm_engine = OllamaClient()

@@ -6,17 +6,318 @@ from cache.redis_cache import redis_cache
 
 generation_semaphore = asyncio.Semaphore(2)
 
-# The 8 classic sections of our BRD
+CORE_INSTRUCTION = """You are a senior Business Analyst with 15 years of
+enterprise software experience. You write formal Business Requirements
+Documents for Fortune 500 companies. Your writing is precise, structured,
+and professional. Every requirement is numbered, attributed to a source,
+and written in formal third-person language. You never mention graph nodes,
+entities, chunks, retrieval metadata, or technical pipeline details in your
+output. You write directly as the author of a professional document."""
+
+EXECUTIVE_SUMMARY_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+The following context has been extracted from real business communications
+including emails, meeting transcripts, and messages:
+
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write a formal Executive Summary section for a Business Requirements Document.
+Use this exact structure:
+
+## Executive Summary
+
+### 1.1 Project Overview
+One paragraph: what system is being built, for which organization, and the
+business purpose. Name the system formally.
+
+### 1.2 Business Context
+One paragraph: the business problem or opportunity. Why does this project exist?
+What happens if it is not delivered?
+
+### 1.3 Key Stakeholders
+| Stakeholder | Title | Primary Role in Project |
+|---|---|---|
+(populate from communications)
+
+### 1.4 Critical Constraints
+Numbered list of the most important constraints on this project:
+timeline, budget, resource, technical. Each must cite its source.
+
+### 1.5 In Scope — Phase 1
+Bulleted list of what is confirmed in scope for the first phase.
+
+### 1.6 Out of Scope — Deferred
+Bulleted list of features explicitly deferred or excluded.
+
+Write now:
+"""
+
+BUSINESS_OBJECTIVES_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write the Business Objectives section. Use this structure:
+
+## Business Objectives
+
+### 2.1 Primary Business Goal
+One sentence stating the overarching goal of this project.
+
+### 2.2 Strategic Objectives
+For each objective found in the communications:
+
+**BO-[N]: [Objective Title]**
+- **Statement:** What must be achieved
+- **Rationale:** Why this matters to the business
+- **Success Measure:** How completion will be verified
+- **Source:** Which stakeholder defined this objective
+
+### 2.3 Business Benefits
+What measurable value does the business gain upon successful delivery?
+Use specific numbers from the communications where available.
+
+Write now:
+"""
+
+STAKEHOLDER_ANALYSIS_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write a formal Stakeholder Analysis. Use this structure:
+
+## Stakeholder Analysis
+
+### 3.1 Stakeholder Register
+
+For each named individual in the communications:
+
+#### [Full Name] — [Title]
+| Attribute | Detail |
+|---|---|
+| **Influence** | High / Medium / Low |
+| **Interest** | High / Medium / Low |
+| **Key Concerns** | What they prioritize |
+| **Requirements Owned** | Specific requirements they raised |
+| **Known Conflicts** | Disagreements with other stakeholders |
+
+### 3.2 Stakeholder Conflict Register
+For each identified conflict between stakeholders:
+
+**CONFLICT-[N]: [Conflict Title]**
+- **Parties:** Who disagrees
+- **Issue:** What they disagree about
+- **Impact:** What happens if unresolved
+- **Resolution Required By:** Deadline if mentioned
+
+Write now:
+"""
+
+FUNCTIONAL_REQUIREMENTS_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write the Functional Requirements section. Every requirement must be
+traceable to the source communications. Use this structure:
+
+## Functional Requirements
+
+### 4.1 Authentication & Access Control
+**FR-001: [Requirement Title]**
+- **Description:** The system shall [specific behavior]
+- **Source:** [Stakeholder name and communication reference]
+- **Priority:** Must Have / Should Have / Nice to Have
+- **Acceptance Criteria:** How this will be tested
+
+(Continue FR-002, FR-003 etc for all auth requirements)
+
+### 4.2 Performance & Scalability
+(Same format, continue requirement numbering)
+
+### 4.3 Dashboard & User Interface
+(Same format)
+
+### 4.4 Security & Compliance
+(Same format)
+
+### 4.5 Integration Requirements
+(Same format)
+
+Write now:
+"""
+
+NON_FUNCTIONAL_REQUIREMENTS_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write the Non-Functional Requirements section covering system quality
+attributes. Use this structure:
+
+## Non-Functional Requirements
+
+For each NFR use this format:
+**NFR-[N]: [Quality Attribute] — [Title]**
+- **Requirement:** The system shall [measurable quality statement]
+- **Metric:** [Specific measurable threshold e.g. 99.9% uptime]
+- **Rationale:** Why this level is required
+- **Source:** Which communication established this requirement
+
+Cover all of these categories with data from the communications:
+- Performance (response time, throughput, concurrent load)
+- Availability (uptime, failover, disaster recovery)
+- Security (encryption, authentication, audit)
+- Scalability (growth capacity, peak load)
+- Compliance (regulatory, legal, policy requirements)
+
+Write now:
+"""
+
+ASSUMPTIONS_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write the Assumptions, Dependencies and Constraints section:
+
+## Assumptions, Dependencies & Constraints
+
+### 6.1 Assumptions
+Numbered list. Each starts with "It is assumed that..."
+Only include assumptions explicitly or implicitly present in the
+communications. Do not invent assumptions.
+
+### 6.2 Dependencies
+What external systems, teams, or decisions must be in place before
+this project can proceed or succeed?
+
+### 6.3 Constraints
+**Budget Constraints:** Financial limitations stated in communications
+**Timeline Constraints:** Hard deadlines and schedule limitations
+**Technical Constraints:** Infrastructure or technology limitations
+**Resource Constraints:** Staffing or capability limitations explicitly mentioned
+
+### 6.4 Open Issues & Decisions Required
+A numbered list of decisions that remain unresolved as of the date of
+these communications. Each must reference the specific conflict or
+uncertainty from the source material.
+
+Write now:
+"""
+
+SUCCESS_METRICS_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write the Success Metrics and KPIs section:
+
+## Success Metrics & KPIs
+
+### 7.1 Key Performance Indicators
+For every measurable number found in the communications create a KPI:
+
+**KPI-[N]: [Metric Name]**
+| Field | Value |
+|---|---|
+| **Target Value** | The specific number or threshold |
+| **Current Baseline** | Current state if mentioned |
+| **Measurement Method** | How this will be tracked |
+| **Responsible Owner** | Which stakeholder owns this metric |
+| **Review Frequency** | How often measured |
+| **Target Date** | When this must be achieved |
+
+### 7.2 Project Acceptance Criteria
+The minimum criteria that must ALL be met for project sign-off.
+Write as a numbered checklist that a project sponsor could sign.
+
+### 7.3 Definition of Done
+One paragraph defining what "complete" means for this project.
+
+Write now:
+"""
+
+TIMELINE_PROMPT = f"""
+{CORE_INSTRUCTION}
+
+Context from business communications:
+{{context}}
+
+{CORE_INSTRUCTION}
+
+Write the Project Timeline section:
+
+## Project Timeline
+
+### 8.1 Phase Overview
+For each project phase mentioned in the communications write one
+paragraph describing what it includes and its target completion date.
+
+### 8.2 Milestone Schedule
+| Milestone ID | Milestone | Description | Target Date | Owner | Dependencies |
+|---|---|---|---|---|---|
+(Populate from all dates and deadlines in communications)
+
+### 8.3 Timeline Risks
+For each date conflict or scheduling disagreement in the communications:
+
+**RISK-[N]: [Risk Title]**
+- **Description:** What the scheduling risk is
+- **Conflicting Positions:** Who proposed what date
+- **Impact if Unresolved:** What slips if this is not decided
+- **Resolution Required By:** When a decision must be made
+
+### 8.4 Critical Path
+One paragraph identifying which milestones are on the critical path
+and the consequences of any delays.
+
+Write now:
+"""
+
 SECTION_PROMPTS = {
-    "executive_summary": "Write the Executive Summary of the Business Requirements Document based on the context.",
-    "business_objectives": "Extract and write the Business Objectives covering KPIs and OKRs based on the context.",
-    "stakeholder_analysis": "Identify key stakeholders, sponsors, and their roles from the context.",
-    "functional_requirements": "List the explicit functional system requirements requested in the context in bullet points.",
-    "non_functional_requirements": "List the non-functional requirements (security, latency, hardware) in the context.",
-    "assumptions": "Detail any assumptions, constraints, and dependencies highlighted in the context.",
-    "success_metrics": "Outline the quantifiable success metrics defined.",
-    "timeline": "Extract phase timelines, milestones, or deadlines mentioned."
+    "executive_summary": EXECUTIVE_SUMMARY_PROMPT,
+    "business_objectives": BUSINESS_OBJECTIVES_PROMPT,
+    "stakeholder_analysis": STAKEHOLDER_ANALYSIS_PROMPT,
+    "functional_requirements": FUNCTIONAL_REQUIREMENTS_PROMPT,
+    "non_functional_requirements": NON_FUNCTIONAL_REQUIREMENTS_PROMPT,
+    "assumptions": ASSUMPTIONS_PROMPT,
+    "success_metrics": SUCCESS_METRICS_PROMPT,
+    "timeline": TIMELINE_PROMPT
 }
+
+PASS_1_PROMPT = """
+From the following business communications, extract every concrete fact,
+number, date, name, requirement, constraint, and decision. List them as
+raw facts only. Be exhaustive.
+
+Communications:
+{context}
+
+List all facts:
+"""
 
 def format_context(context_chunks: List[str]) -> str:
     """Format the CRAG-filtered chunks into a single readable block."""
@@ -25,42 +326,64 @@ def format_context(context_chunks: List[str]) -> str:
     return "\n\n---\n\n".join(context_chunks)
 
 async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[str, None]:
-    """
-    Generates a single BRD section.
-    Applies DeepMind Prompt Repetition for 0-latency attention boosting.
-    Streams tokens back to the WebSocket caller.
-    """
     async with generation_semaphore:
         # 1. Autonomous Retrieval
         context_chunks = await enhanced_retrieve(query, section_name)
     
     async with generation_semaphore:
-        # Check if the cache hit directly returned the final answer string
+        # Check cache hit
         if len(context_chunks) == 2 and context_chunks[0] == "__CACHE_HIT__":
-             # It's a cache hit string
              yield context_chunks[1]
              return
     
-        section_prompt = SECTION_PROMPTS.get(section_name, "Write this BRD section.")
-        context = format_context(context_chunks)
-    
-        # 2. PROMPT REPETITION (arXiv:2512.14982)
-        # <PROMPT><PROMPT> technique wins 47/70 benchmarks
-        full_prompt = f"System: {section_prompt}\n\nContext:\n{context}\n\nSystem: {section_prompt}\n\nContext:\n{context}\n\nAnswer:"
-    
-        # 3. Stream Generation
+        raw_context = format_context(context_chunks)
+        
+        # RESEARCH TECHNIQUE 2: Chain of Density (Pass 1 - Fact Extraction)
+        # We use a fast draft model to pull facts efficiently
+        facts = await vllm_engine.generate(PASS_1_PROMPT.format(context=raw_context), model_override=vllm_engine.draft_model, temperature=0.2)
+        
+        # RESEARCH TECHNIQUE 1 is embedded directly into these formal prompts (Sandwich Repetition)
+        section_prompt_template = SECTION_PROMPTS.get(section_name, "Write this BRD section.")
+        full_prompt = section_prompt_template.format(context=facts)
+        
         completed_section = ""
-        async for token in vllm_engine.generate_stream(full_prompt):
-            completed_section += token
-            yield token  # Yield to WebSocket
+        
+        # RESEARCH TECHNIQUE 3: Self-Consistency Prompting
+        if section_name in ['functional_requirements', 'non_functional_requirements']:
+            # Generate A (Low Temp)
+            output_a = await vllm_engine.generate(full_prompt, temperature=0.3, max_tokens=2048, model_override=vllm_engine.model)
+            # Generate B (High Temp)
+            output_b = await vllm_engine.generate(full_prompt, temperature=0.7, max_tokens=2048, model_override=vllm_engine.model)
+            
+            merge_prompt = f"""
+            Two analysts independently wrote requirements from the same data.
+            Merge them into one list keeping only requirements that appear in BOTH versions.
+            Remove any requirement that only appears in one version.
+
+            Version A:
+            {output_a}
+
+            Version B:
+            {output_b}
+
+            Merged requirements (only those in both):
+            """
+            
+            # Use 7B/draft_model via streaming for final output return
+            async for token in vllm_engine.generate_stream(merge_prompt, model_override=vllm_engine.draft_model, temperature=0.2):
+                completed_section += token
+                yield token
+        else:
+            # Standard single pass professional document (Pass 2)
+            async for token in vllm_engine.generate_stream(full_prompt, temperature=0.2):
+                completed_section += token
+                yield token  # Yield to WebSocket
     
-        # 4. Cache the finalized result for next time
+        # Cache the finalized result
         redis_cache.store(query, section_name, completed_section)
 
 async def generate_section_edit(section: str, query: str, current_content: str) -> str:
-    """
-    Edits an existing BRD section based on natural language feedback from the user.
-    """
+    """Edits an existing BRD section based on natural language feedback from the user."""
     prompt = f"System: You are an expert business analyst editing a Business Requirements Document. Edit the following section named '{section}' based on the user's request. Output only the revised section content, without any introductory or concluding remarks.\n\nUser Request: {query}\n\nCurrent Content:\n{current_content}\n\nRevised Content:\n"
     
     edited_section = ""
@@ -70,18 +393,13 @@ async def generate_section_edit(section: str, query: str, current_content: str) 
     return edited_section
 
 async def generate_full_brd(base_query: str) -> dict:
-    """
-    Parallel orchestration of all 8 BRD sections simultaneously.
-    This limits total duration to the slowest section (vs sequential sum).
-    Note: Websockets usually stream one by one, so this function is useful for batch/API generation.
-    """
+    """Parallel orchestration of all 8 BRD sections simultaneously."""
     sections = [
         "executive_summary", "business_objectives", "stakeholder_analysis",
         "functional_requirements", "non_functional_requirements", "assumptions",
         "success_metrics", "timeline"
     ]
     
-    # Wrap generator in a collector to await all parallel
     async def collect_section(sec_name):
         full_text = ""
         async for t in generate_brd_section(sec_name, base_query):
@@ -90,5 +408,4 @@ async def generate_full_brd(base_query: str) -> dict:
 
     tasks = [collect_section(sec) for sec in sections]
     results = await asyncio.gather(*tasks)
-    
     return {sec: txt for sec, txt in results}
