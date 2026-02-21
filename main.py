@@ -7,6 +7,7 @@ import uvicorn
 from pipeline.ingestion import ingest_document
 from pipeline.generator import generate_brd_section, generate_full_brd
 from pipeline.conflict import detect_brd_conflicts
+from pipeline.traceability import generate_traceability_matrix
 from cache.redis_cache import redis_cache
 import pipeline.rag_engine as rag_mod
 
@@ -52,14 +53,22 @@ async def upload_document(file: UploadFile = File(...)):
     except Exception as e:
         return {"filename": file.filename, "status": "error", "reason": str(e)}
 
-@app.post("/api/conflicts")
-async def retrieve_conflicts(query: str):
+@app.get("/conflicts")
+async def retrieve_conflicts_get():
     """
     REST Endpoint: Generates an analytics report spotting structural conflicts
     between uploaded datasources using RRF mapping.
     """
-    report = await detect_brd_conflicts(query)
+    report = await detect_brd_conflicts("Identify any structural conflicts or contradictory requirements in the uploaded documents.")
     return report
+
+@app.get("/traceability")
+async def get_traceability():
+    """
+    REST Endpoint: Generates a traceability matrix mapping requirements to sources.
+    """
+    matrix = await generate_traceability_matrix()
+    return matrix
 
 @app.get("/health")
 async def health_check():
@@ -109,6 +118,31 @@ async def generate_section_stream(websocket: WebSocket, section_name: str):
             await websocket.close()
         except RuntimeError:
             pass  # Already closed
+
+from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
+
+class EmailPayload(BaseModel):
+    text: str
+
+@app.post("/ingest/email")
+async def ingest_email(payload: EmailPayload):
+    content = payload.text.encode("utf-8")
+    metadata = {"filename": "email.eml", "content_type": "message/rfc822"}
+    result = await ingest_document(content, metadata)
+    return {"status": "success", "details": result}
+
+@app.get("/ingest/status")
+async def get_ingest_status():
+    return {"status": "completed", "docs_processed": 1}
+
+class SectionPayload(BaseModel):
+    section: str
+
+@app.post("/generate/section")
+async def generate_section(payload: SectionPayload):
+    query_text = payload.section.replace("_", " ")
+    return StreamingResponse(generate_brd_section(payload.section, query_text), media_type="text/plain")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

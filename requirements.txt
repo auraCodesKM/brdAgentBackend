@@ -7,7 +7,7 @@ lightrag-hku
 mineru[all]
 faster-whisper
 FlagEmbedding
-vllm
+openai
 redis[hiredis]
 redisvl
 pandas

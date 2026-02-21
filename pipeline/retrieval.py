@@ -6,7 +6,7 @@ from cache.redis_bm25 import redis_bm25
 from models.llm import vllm_engine
 from models.embeddings import bge_m3
 from models.reranker import bge_reranker
-from pipeline.rag_engine import rag_instance
+import pipeline.rag_engine as rag_mod
 from lightrag import QueryParam
 
 # Global setting to prevent infinite re-retrieval loops in CRAG
@@ -19,12 +19,12 @@ async def faiss_semantic_search(embedding: list[float], top_k: int = 10) -> List
 
 async def lightrag_graph_search(query: str, mode: str = "hybrid") -> List[Dict[str, Any]]:
     """Query LightRAG for entities and relational summaries."""
-    if not rag_instance:
+    if not rag_mod.rag_instance:
         return []
         
     try:
         # We use LightRAG's query_with_stream or raw query logic
-        result = await rag_instance.aquery(query, param=QueryParam(mode=mode))
+        result = await rag_mod.rag_instance.aquery(query, param=QueryParam(mode=mode))
         if result:
             return [{"chunk": result, "score": 1.0, "source": "lightrag"}]
         return []
@@ -88,10 +88,10 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
     scored_results = bge_reranker.rerank_and_score(query, merged_text_chunks)
     
     # Discard non-relevant chunks
-    filtered = [item["chunk"] for item in scored_results if item["score"] > 0.6]
+    filtered = [item["chunk"] for item in scored_results if item["score"] > 0.3]
     
     # Step 6: If average quality is too low, re-retrieve up to MAX_RETRIES
-    if not filtered or (sum(item["score"] for item in scored_results[:len(filtered)]) / max(len(filtered), 1)) < 0.5:
+    if not filtered or (sum(item["score"] for item in scored_results[:len(filtered)]) / max(len(filtered), 1)) < 0.2:
         if retry_count < MAX_RETRIES:
             print("CRAG: Relevance too low. Reformulating query...")
             new_query = await reformulate_query(query)
@@ -99,5 +99,17 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
         else:
             print("CRAG: Max retries hit. Proceeding with best available context.")
             filtered = [item["chunk"] for item in scored_results] # Fallback to top ranking even if low score
+
+    # Debug request from user to trace chunk integrity:
+    print("\n" + "="*50)
+    print(f"DEBUG: Retrieved Chunks for '{query}'")
+    print("="*50)
+    for idx, item in enumerate(scored_results[:3]):
+        print(f"\n[Chunk {idx+1}] Score: {item['score']:.4f}")
+        # Note: the actual source logic is lost in deduplicate_rrf returning just text, 
+        # but the scores map accurately.
+        text_preview = item["chunk"][:300].replace('\n', ' ') + "..."
+        print(f"Content: {text_preview}")
+    print("="*50 + "\n")
 
     return filtered[:5]  # return top 5 highest quality chunks

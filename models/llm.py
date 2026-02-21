@@ -5,18 +5,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-VLLM_URL = os.getenv("VLLM_URL", "http://localhost:8001/v1")
-PRIMARY_MODEL = os.getenv("PRIMARY_LLM", "Qwen/Qwen2.5-72B-Instruct-AWQ")
-DRAFT_MODEL = os.getenv("DRAFT_LLM", "Qwen/Qwen2.5-7B-Instruct")
+OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+PRIMARY_MODEL = os.getenv("OLLAMA_MODEL_NAME", "qwen2.5:32b")
+DRAFT_MODEL = os.getenv("DRAFT_LLM", "qwen2.5:32b")
 
-class VLLMClient:
+class OllamaClient:
     def __init__(self):
-        self.base_url = VLLM_URL
+        self.base_url = OLLAMA_URL
         self.model = PRIMARY_MODEL
         self.draft_model = DRAFT_MODEL
 
     async def generate_stream(self, prompt: str, model_override: str = None):
-        """Asynchronously stream tokens from the vLLM server."""
+        """Asynchronously stream tokens from the Ollama server."""
         model_to_use = model_override or self.model
         
         async with httpx.AsyncClient() as client:
@@ -43,7 +43,7 @@ class VLLMClient:
                         except json.JSONDecodeError:
                             continue
 
-    async def generate(self, prompt: str, model_override: str = None) -> str:
+    async def generate(self, prompt: str, model_override: str = None, max_tokens: int = 512) -> str:
         """Standard async generation (used for HyDE/HyPE with 7B)."""
         model_to_use = model_override or self.draft_model
         
@@ -51,12 +51,12 @@ class VLLMClient:
             req_data = {
                 "model": model_to_use,
                 "prompt": prompt,
-                "max_tokens": 512,
+                "max_tokens": max_tokens,
                 "temperature": 0.7,
                 "stream": False
             }
-            response = await client.post(f"{self.base_url}/completions", json=req_data, timeout=60.0)
+            response = await client.post(f"{self.base_url}/completions", json=req_data, timeout=180.0)
             response.raise_for_status()
             return response.json()["choices"][0]["text"]
 
-vllm_engine = VLLMClient()
+vllm_engine = OllamaClient()

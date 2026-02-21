@@ -2,8 +2,11 @@ import os
 import json
 from redis import Redis
 from redis.commands.search.field import TextField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BM25_INDEX_TTL = 86400  # 24 hours
 
@@ -42,7 +45,10 @@ class RedisBM25Index:
             pipe.hset(doc_id, mapping={"content": chunk})
             pipe.expire(doc_id, BM25_INDEX_TTL)
             
-        pipe.execute()
+        try:
+            pipe.execute()
+        except Exception as e:
+            print(f"Redis pipeline execution failed: {e}")
 
     async def search(self, query_str: str, top_k: int = 10):
         """

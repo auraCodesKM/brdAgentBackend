@@ -7,6 +7,9 @@ from redisvl.index import SearchIndex
 from redisvl.query import VectorQuery
 from models.embeddings import bge_m3
 from cachetools import TTLCache
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Global TTLs
 SEMANTIC_CACHE_TTL = 7200  # 2 hours
@@ -60,11 +63,15 @@ class RedisSemanticCache:
             self.index = SearchIndex.from_dict(schema)
             self.index.connect(self.redis)
             self.index.create(overwrite=False)
+            self.initialized = True
         except Exception as e:
             print(f"Redis Cache init error (ensure redis is running): {e}")
+            self.initialized = False
 
     def check(self, query: str, section_name: str, threshold: float = None):
         """Check L1 Cache first, then L2 Upstash, with compression support."""
+        if not getattr(self, "initialized", False):
+            return None
         # 1. Check L1 Cache
         cache_key = make_cache_key("sem", query)
         if cache_key in l1_cache:
@@ -104,6 +111,8 @@ class RedisSemanticCache:
 
     def store(self, query: str, section_name: str, answer: str, inference_time_ms: int = 4000):
         """Smart cache eviction: only store if high value."""
+        if not getattr(self, "initialized", False):
+            return
         # Only cache if query is substantive and result is not bloated
         if len(query) < 20: 
             return
