@@ -30,4 +30,4 @@ tmp/
 
 # Data and Models
 data/
-models/
+hf_cache/

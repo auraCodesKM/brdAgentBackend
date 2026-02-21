@@ -109,7 +109,7 @@ Before doing anything, you must cache the 50GB+ of weights directly into your `H
 pip install huggingface_hub
 
 # 2. Set the Environment Variable in powershell so it downloads into the repository
-$env:HF_HOME="./models/hf_cache"
+$env:HF_HOME="./hf_cache"
 
 # 3. Pre-fetch Dense & Sparse Embeddings (Approx 2.3GB)
 huggingface-cli download BAAI/bge-m3
