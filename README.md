@@ -97,7 +97,7 @@ Typical hackathon RAGs use naive `PyPDF2`, a basic chunker, and `OpenAI embeddin
 - **Knowledge Graph & Dense Search**: RAG-Anything + LightRAG, FAISS
 - **Sparse & Cache**: Redis (Semantic Cache + BM25)
 - **Vector Models**: BGE-M3 (Embeddings), BGE-reranker-large (Cross-encoder)
-- **Generation**: vLLM (Speculative Decoding with Qwen 2.5 32B & 7B)
+- **Generation**: vLLM (Qwen 2.5 32B AWQ)
 
 ## Exact Startup Commands
 
@@ -120,10 +120,7 @@ huggingface-cli download BAAI/bge-reranker-large
 # 5. Pre-fetch Whisper Audio Transcriber (Approx 3GB)
 huggingface-cli download Systran/faster-whisper-large-v3
 
-# 6. Pre-fetch vLLM Drafter LLM (Approx 15GB)
-huggingface-cli download Qwen/Qwen2.5-7B-Instruct
-
-# 7. Pre-fetch vLLM Verifier LLM (Approx 20GB)
+# 6. Pre-fetch vLLM Verifier LLM (Approx 20GB)
 huggingface-cli download Qwen/Qwen2.5-32B-Instruct-AWQ
 ```
 
@@ -148,15 +145,14 @@ cp .env.example .env
 # Fill in your Upstash and DB credentials
 ```
 
-### 5. Start vLLM with Speculative Decoding
+### 5. Start vLLM backend
 ```bash
 python -m vllm.entrypoints.openai.api_server \
   --model Qwen/Qwen2.5-32B-Instruct-AWQ \
-  --speculative-model Qwen/Qwen2.5-7B-Instruct \
-  --num-speculative-tokens 5 \
   --quantization awq \
-  --max-model-len 32768 \
-  --gpu-memory-utilization 0.85 \
+  --max-model-len 16384 \
+  --gpu-memory-utilization 0.75 \
+  --dtype half \
   --port 8001
 ```
 
