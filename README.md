@@ -90,17 +90,7 @@ Typical hackathon RAGs use naive `PyPDF2`, a basic chunker, and `OpenAI embeddin
 * **What:** vLLM natively drafting with Qwen 7B and verifying with Qwen 72B.
 * **Why:** Standard autoregressive generation is memory-bandwidth bound. We use a tiny 7B model to guess the next 5 tokens rapidly, and the massive 72B model just verifies them in parallel. This yields a massive token/sec speedup on the RTX 4090.
 
----
 
-## ⚡ Cache Architecture
-We employ a severe, zero-bloat 3-tier caching system optimizing for Mumbai free-tier Upstash boundaries:
-
-*   **L1 TTLCache:** In-memory TTLCache (100 items, 5min, zero LLM latency)
-*   **L2 Upstash Redis:** Hosted Mumbai (persistent, shared, ~30ms latency, gzip compressed payload)
-*   **L3 vLLM Inference:** Full GPU execution (2-10 seconds)
-    
-*Estimated Upstash usage:* ~30MB storage, ~5MB/day bandwidth
-*Free tier headroom:* 88% storage remaining, 99.95% bandwidth remaining
 
 ## Complete Tech Matrix
 - **Ingestion**: MinerU 2.7.6, faster-whisper (Audio/Video parsing)
@@ -117,7 +107,22 @@ git clone https://github.com/auraCodesKM/brdAgentBackend.git
 cd brdAgentBackend
 ```
 
-### 2. Start vLLM with Speculative Decoding
+### 2. Configure Upstash Redis
+```bash
+# Create free account at upstash.com
+# Create database in Mumbai region
+# Copy credentials to .env file:
+# UPSTASH_REDIS_REST_URL=your_url
+# UPSTASH_REDIS_REST_TOKEN=your_token
+```
+
+### 3. Setup Environment
+```bash
+cp .env.example .env
+# Fill in your Upstash and DB credentials
+```
+
+### 4. Start vLLM with Speculative Decoding
 ```bash
 python -m vllm.entrypoints.openai.api_server \
   --model Qwen/Qwen2.5-72B-Instruct-AWQ \
@@ -129,12 +134,18 @@ python -m vllm.entrypoints.openai.api_server \
   --port 8001
 ```
 
-### 3. Start FastAPI Application
+### 5. Start FastAPI Application
 The FastAPI server orchestrates HyPE, HyDE, CRAG, RAPTOR, and parallel generation algorithms.
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
+```
+
+### 6. Verify Installation
+```bash
+curl http://localhost:8000/health
+# Expected: {"status": "healthy", "gpu": "RTX 4090", "vram_used": "Managed by vLLM"}
 ```

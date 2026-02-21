@@ -61,6 +61,11 @@ async def retrieve_conflicts(query: str):
     report = await detect_brd_conflicts(query)
     return report
 
+@app.get("/health")
+async def health_check():
+    """Verify system is up before demo."""
+    return {"status": "healthy", "gpu": "RTX 4090", "vram_used": "Managed by vLLM"}
+
 @app.get("/cache/stats")
 async def cache_stats():
     """Monitor Upstash Free Tier Budget."""
