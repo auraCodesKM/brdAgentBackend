@@ -108,19 +108,22 @@ Before doing anything, you must cache the 50GB+ of weights directly into your `H
 # 1. Install HuggingFace CLI
 pip install huggingface_hub
 
-# 2. Pre-fetch Dense & Sparse Embeddings (Approx 2.3GB)
+# 2. Set the Environment Variable in powershell so it downloads into the repository
+$env:HF_HOME="./models/hf_cache"
+
+# 3. Pre-fetch Dense & Sparse Embeddings (Approx 2.3GB)
 huggingface-cli download BAAI/bge-m3
 
-# 3. Pre-fetch CRAG Cross-Encoder (Approx 2.2GB)
+# 4. Pre-fetch CRAG Cross-Encoder (Approx 2.2GB)
 huggingface-cli download BAAI/bge-reranker-large
 
-# 4. Pre-fetch Whisper Audio Transcriber (Approx 3GB)
+# 5. Pre-fetch Whisper Audio Transcriber (Approx 3GB)
 huggingface-cli download Systran/faster-whisper-large-v3
 
-# 5. Pre-fetch vLLM Drafter LLM (Approx 15GB)
+# 6. Pre-fetch vLLM Drafter LLM (Approx 15GB)
 huggingface-cli download Qwen/Qwen2.5-7B-Instruct
 
-# 6. Pre-fetch vLLM Verifier LLM (Approx 40GB+) - WARNING: Slow Download
+# 7. Pre-fetch vLLM Verifier LLM (Approx 40GB+) - WARNING: Slow Download
 huggingface-cli download Qwen/Qwen2.5-72B-Instruct-AWQ
 ```
 

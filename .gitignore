@@ -27,3 +27,7 @@ tmp/
 .vscode/
 .idea/
 .DS_Store
+
+# Data and Models
+data/
+models/
