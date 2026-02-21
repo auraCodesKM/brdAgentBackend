@@ -1,6 +1,17 @@
-# 🧠 BRD Agent: Local Advanced RAG Backend
-> **The most sophisticated RAG Engine ever deployed for a hackathon.**
-> Built locally on an RTX 4090. Zero API calls. Zero data leaks.
+<div align="center">
+
+# 🧠 BRD Agent (Backend Node)
+### Advanced RAG Inference Engine
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
+[![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)](https://pytorch.org/)
+
+> **The most sophisticated RAG Engine ever deployed for a hackathon.**  
+> Built locally on an RTX 4090. Zero external API calls. Zero data leaks.
+
+</div>
 
 Welcome to the central intelligence of the BRD Agent. This Python FastAPI backend orchestrates **9 different breakthrough techniques from 2025-2026 AI research** to transform messy unstructured data into pristine Business Requirement Documents.
 
