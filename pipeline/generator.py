@@ -30,30 +30,44 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
     Applies DeepMind Prompt Repetition for 0-latency attention boosting.
     Streams tokens back to the WebSocket caller.
     """
-    # 1. Autonomous Retrieval
-    context_chunks = await enhanced_retrieve(query, section_name)
+    async with generation_semaphore:
+        # 1. Autonomous Retrieval
+        context_chunks = await enhanced_retrieve(query, section_name)
     
-    # Check if the cache hit directly returned the final answer string
-    if len(context_chunks) == 2 and context_chunks[0] == "__CACHE_HIT__":
-         # It's a cache hit string
-         yield context_chunks[1]
-         return
+    async with generation_semaphore:
+        # Check if the cache hit directly returned the final answer string
+        if len(context_chunks) == 2 and context_chunks[0] == "__CACHE_HIT__":
+             # It's a cache hit string
+             yield context_chunks[1]
+             return
+    
+        section_prompt = SECTION_PROMPTS.get(section_name, "Write this BRD section.")
+        context = format_context(context_chunks)
+    
+        # 2. PROMPT REPETITION (arXiv:2512.14982)
+        # <PROMPT><PROMPT> technique wins 47/70 benchmarks
+        full_prompt = f"System: {section_prompt}\n\nContext:\n{context}\n\nSystem: {section_prompt}\n\nContext:\n{context}\n\nAnswer:"
+    
+        # 3. Stream Generation
+        completed_section = ""
+        async for token in vllm_engine.generate_stream(full_prompt):
+            completed_section += token
+            yield token  # Yield to WebSocket
+    
+        # 4. Cache the finalized result for next time
+        redis_cache.store(query, section_name, completed_section)
 
-    section_prompt = SECTION_PROMPTS.get(section_name, "Write this BRD section.")
-    context = format_context(context_chunks)
-
-    # 2. PROMPT REPETITION (arXiv:2512.14982)
-    # <PROMPT><PROMPT> technique wins 47/70 benchmarks
-    full_prompt = f"System: {section_prompt}\n\nContext:\n{context}\n\nSystem: {section_prompt}\n\nContext:\n{context}\n\nAnswer:"
-
-    # 3. Stream Generation
-    completed_section = ""
-    async for token in vllm_engine.generate_stream(full_prompt):
-        completed_section += token
-        yield token  # Yield to WebSocket
-
-    # 4. Cache the finalized result for next time
-    redis_cache.store(query, section_name, completed_section)
+async def generate_section_edit(section: str, query: str, current_content: str) -> str:
+    """
+    Edits an existing BRD section based on natural language feedback from the user.
+    """
+    prompt = f"System: You are an expert business analyst editing a Business Requirements Document. Edit the following section named '{section}' based on the user's request. Output only the revised section content, without any introductory or concluding remarks.\n\nUser Request: {query}\n\nCurrent Content:\n{current_content}\n\nRevised Content:\n"
+    
+    edited_section = ""
+    async for token in vllm_engine.generate_stream(prompt):
+        edited_section += token
+        
+    return edited_section
 
 async def generate_full_brd(base_query: str) -> dict:
     """

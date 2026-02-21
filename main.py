@@ -116,7 +116,12 @@ async def generate_section_stream(websocket: WebSocket, section_name: str):
         async for token in generate_brd_section(section_name, query):
             await websocket.send_text(token)
             
-        # Send termination sequence
+        import json
+        
+        # Send termination completion payload map for UI status toggle
+        await websocket.send_text(json.dumps({"type": "complete", "message": "BRD generation complete"}))
+        
+        # Send original termination sequence
         await websocket.send_text("[DONE]")
         
     except WebSocketDisconnect:
@@ -151,6 +156,20 @@ async def ingest_email(payload: EmailPayload):
 @app.get("/ingest/status")
 async def get_ingest_status():
     return {"status": "completed", "docs_processed": 1}
+
+class EditRequest(BaseModel):
+    section: str
+    query: str
+    current_content: str
+
+@app.post("/api/generate/edit")
+async def edit_section_endpoint(request: EditRequest):
+    result = await generate_section_edit(
+        section=request.section,
+        query=request.query,
+        current_content=request.current_content
+    )
+    return {"content": result}
 
 class SectionPayload(BaseModel):
     section: str
