@@ -1,0 +1,29 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python caching
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases & local storage
+lightrag_workspace/
+*.db
+*.sqlite3
+
+# Logs & temp
+*.log
+tmp/
+.temp/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
