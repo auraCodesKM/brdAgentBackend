@@ -4,7 +4,7 @@ from pipeline.retrieval import enhanced_retrieve
 from models.llm import vllm_engine
 from cache.redis_cache import redis_cache
 
-generation_semaphore = asyncio.Semaphore(2)
+generation_semaphore = asyncio.Semaphore(3)
 
 CORE_INSTRUCTION = """You are a senior Business Analyst with 15 years of
 enterprise software experience. You write formal Business Requirements
@@ -308,6 +308,35 @@ SECTION_PROMPTS = {
     "timeline": TIMELINE_PROMPT
 }
 
+CRITICAL_ANTI_HALLUCINATION = """
+CRITICAL: Do not invent any project names, company names, system names,
+person titles, dates, numbers, or facts not explicitly stated in the source
+communications. If a project name is not mentioned, call it "the proposed
+platform". If a company name is not mentioned, use the email domain
+(e.g. @enron.com = Enron). If a value is unknown write
+"Not specified in available communications" — never invent a value.
+"""
+
+FORMAT_REQUIREMENTS = """
+FORMAT REQUIREMENTS:
+Use rich markdown formatting throughout. Every section must include at least
+one of the following visual elements where relevant:
+
+- Markdown tables for: stakeholder registers, requirement lists, milestone
+  schedules, KPI tracking, comparison matrices
+- Mermaid diagrams where helpful:
+  * Timeline: use gantt chart
+  * Stakeholder relationships: use graph LR
+  * Phase dependencies: use flowchart TD
+- Risk matrices as formatted tables with color indicators (🔴 High 🟡 Medium 🟢 Low)
+- Priority indicators on every requirement (🔴 Must Have 🟡 Should Have 🟢 Nice to Have)
+- Status indicators on milestones (✅ Confirmed 🔴 At Risk ⚠️ Unresolved)
+BUT DONT FILL THE SYSTEM WITH THESE EMOJIES USE COLOURED TEXTS AND BOXES FOR BETTER AND FORMAT OUR RESPONSES NICELY
+"""
+
+for k in SECTION_PROMPTS:
+    SECTION_PROMPTS[k] = SECTION_PROMPTS[k].replace("Write now:", f"{CRITICAL_ANTI_HALLUCINATION}\n{FORMAT_REQUIREMENTS}\n\nWrite now:")
+
 PASS_1_PROMPT = """
 From the following business communications, extract every concrete fact,
 number, date, name, requirement, constraint, and decision. List them as
@@ -392,20 +421,32 @@ async def generate_section_edit(section: str, query: str, current_content: str) 
         
     return edited_section
 
-async def generate_full_brd(base_query: str) -> dict:
-    """Parallel orchestration of all 8 BRD sections simultaneously."""
-    sections = [
-        "executive_summary", "business_objectives", "stakeholder_analysis",
-        "functional_requirements", "non_functional_requirements", "assumptions",
-        "success_metrics", "timeline"
-    ]
-    
-    async def collect_section(sec_name):
-        full_text = ""
-        async for t in generate_brd_section(sec_name, base_query):
-            full_text += t
-        return sec_name, full_text
+# Wave 1 — start immediately, highest priority sections (most requested by judges)
+WAVE_1 = ['executive_summary', 'functional_requirements', 'stakeholder_analysis']
 
-    tasks = [collect_section(sec) for sec in sections]
-    results = await asyncio.gather(*tasks)
-    return {sec: txt for sec, txt in results}
+# Wave 2 — start as soon as ANY Wave 1 section completes
+WAVE_2 = ['business_objectives', 'non_functional_requirements', 'assumptions']
+
+# Wave 3 — start as soon as ANY Wave 2 section completes
+WAVE_3 = ['success_metrics', 'timeline']
+
+async def generate_full_brd(base_query: str) -> dict:
+    async def run_section(section_name):
+        full_text = ""
+        async for t in generate_brd_section(section_name, base_query):
+            full_text += t
+        return section_name, full_text
+
+    # Launch Wave 1 — all 3 start simultaneously
+    wave1_tasks = [run_section(s) for s in WAVE_1]
+
+    # Launch Wave 2 — starts when semaphore slots free up from Wave 1
+    wave2_tasks = [run_section(s) for s in WAVE_2]
+
+    # Launch Wave 3 — starts when semaphore slots free up from Wave 2
+    wave3_tasks = [run_section(s) for s in WAVE_3]
+
+    # Gather all — semaphore handles the throttling automatically
+    all_tasks = wave1_tasks + wave2_tasks + wave3_tasks
+    results = await asyncio.gather(*all_tasks, return_exceptions=True)
+    return {sec: txt for sec, txt in results if not isinstance(txt, Exception)}
