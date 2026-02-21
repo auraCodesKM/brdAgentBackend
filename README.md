@@ -101,13 +101,36 @@ Typical hackathon RAGs use naive `PyPDF2`, a basic chunker, and `OpenAI embeddin
 
 ## Exact Startup Commands
 
-### 1. Clone the Repository
+### 1. Pre-Download Heavy Models to HF Cache
+Before doing anything, you must cache the 50GB+ of weights directly into your `HF_HOME` directory. This prevents runtime delay and avoids committing gigabytes of binaries into GitHub.
+
+```bash
+# 1. Install HuggingFace CLI
+pip install huggingface_hub
+
+# 2. Pre-fetch Dense & Sparse Embeddings (Approx 2.3GB)
+huggingface-cli download BAAI/bge-m3
+
+# 3. Pre-fetch CRAG Cross-Encoder (Approx 2.2GB)
+huggingface-cli download BAAI/bge-reranker-large
+
+# 4. Pre-fetch Whisper Audio Transcriber (Approx 3GB)
+huggingface-cli download Systran/faster-whisper-large-v3
+
+# 5. Pre-fetch vLLM Drafter LLM (Approx 15GB)
+huggingface-cli download Qwen/Qwen2.5-7B-Instruct
+
+# 6. Pre-fetch vLLM Verifier LLM (Approx 40GB+) - WARNING: Slow Download
+huggingface-cli download Qwen/Qwen2.5-72B-Instruct-AWQ
+```
+
+### 2. Clone the Repository
 ```bash
 git clone https://github.com/auraCodesKM/brdAgentBackend.git
 cd brdAgentBackend
 ```
 
-### 2. Configure Upstash Redis
+### 3. Configure Upstash Redis
 ```bash
 # Create free account at upstash.com
 # Create database in Mumbai region
@@ -116,13 +139,13 @@ cd brdAgentBackend
 # UPSTASH_REDIS_REST_TOKEN=your_token
 ```
 
-### 3. Setup Environment
+### 4. Setup Environment
 ```bash
 cp .env.example .env
 # Fill in your Upstash and DB credentials
 ```
 
-### 4. Start vLLM with Speculative Decoding
+### 5. Start vLLM with Speculative Decoding
 ```bash
 python -m vllm.entrypoints.openai.api_server \
   --model Qwen/Qwen2.5-72B-Instruct-AWQ \
@@ -134,7 +157,7 @@ python -m vllm.entrypoints.openai.api_server \
   --port 8001
 ```
 
-### 5. Start FastAPI Application
+### 6. Start FastAPI Application
 The FastAPI server orchestrates HyPE, HyDE, CRAG, RAPTOR, and parallel generation algorithms.
 ```bash
 cd backend
@@ -144,7 +167,7 @@ pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
 ```
 
-### 6. Verify Installation
+### 7. Verify Installation
 ```bash
 curl http://localhost:8000/health
 # Expected: {"status": "healthy", "gpu": "RTX 4090", "vram_used": "Managed by vLLM"}
