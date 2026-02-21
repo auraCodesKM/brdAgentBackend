@@ -101,27 +101,12 @@ Typical hackathon RAGs use naive `PyPDF2`, a basic chunker, and `OpenAI embeddin
 
 ## Exact Startup Commands
 
-### 1. Pre-Download Heavy Models to HF Cache
-Before doing anything, you must cache the 50GB+ of weights directly into your `HF_HOME` directory. This prevents runtime delay and avoids committing gigabytes of binaries into GitHub.
-
 ```bash
-# 1. Install HuggingFace CLI
-pip install huggingface_hub
+# 1. Install required packages
+pip install huggingface_hub python-dotenv
 
-# 2. Set the Environment Variable in powershell so it downloads into the repository
-$env:HF_HOME="./hf_cache"
-
-# 3. Pre-fetch Dense & Sparse Embeddings (Approx 2.3GB)
-huggingface-cli download BAAI/bge-m3
-
-# 4. Pre-fetch CRAG Cross-Encoder (Approx 2.2GB)
-huggingface-cli download BAAI/bge-reranker-large
-
-# 5. Pre-fetch Whisper Audio Transcriber (Approx 3GB)
-huggingface-cli download Systran/faster-whisper-large-v3
-
-# 6. Pre-fetch vLLM Verifier LLM (Approx 20GB)
-huggingface-cli download Qwen/Qwen2.5-32B-Instruct-AWQ
+# 2. Run the automated secure download script
+python download_models.py
 ```
 
 ### 2. Clone the Repository
