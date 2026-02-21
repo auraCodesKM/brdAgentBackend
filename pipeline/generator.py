@@ -4,6 +4,8 @@ from pipeline.retrieval import enhanced_retrieve
 from models.llm import vllm_engine
 from cache.redis_cache import redis_cache
 
+generation_semaphore = asyncio.Semaphore(2)
+
 # The 8 classic sections of our BRD
 SECTION_PROMPTS = {
     "executive_summary": "Write the Executive Summary of the Business Requirements Document based on the context.",

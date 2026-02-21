@@ -28,20 +28,40 @@ class OllamaClient:
                 "stream": True
             }
             
-            async with client.stream("POST", f"{self.base_url}/completions", json=req_data, timeout=120.0) as response:
+            # Use a longer timeout for the streaming setup, and no timeout for the read
+            async with client.stream("POST", f"{self.base_url}/completions", json=req_data, timeout=None) as response:
+                print(f"Ollama Stream Connected: HTT{response.status_code}")
                 response.raise_for_status()
                 async for chunk in response.aiter_lines():
+                    if not chunk:
+                        continue
+                        
+                    # print(f"Raw Chunk: {chunk}")
+                    
+                    # OpenAI /v1/completions compat mode sends "data: {...}"
                     if chunk.startswith("data: "):
                         data_str = chunk[6:]
                         if data_str.strip() == "[DONE]":
                             break
-                        try:
-                            data_json = json.loads(data_str)
-                            text = data_json["choices"][0]["text"]
-                            if text:
-                                yield text
-                        except json.JSONDecodeError:
-                            continue
+                    else:
+                        # Direct Ollama fallback processing
+                        data_str = chunk
+                        
+                    try:
+                        data_json = json.loads(data_str)
+                        if "choices" in data_json and len(data_json["choices"]) > 0:
+                            text = data_json["choices"][0].get("text", "")
+                        else:
+                            text = data_json.get("response", "") # Standard Ollama fallback
+                            
+                        if text:
+                            yield text
+                    except json.JSONDecodeError as e:
+                        print(f"JSON Decode Error on chunk: {data_str} -> {e}")
+                        continue
+                    except Exception as e:
+                        print(f"Unexpected streaming parsing error: {e}")
+                        continue
 
     async def generate(self, prompt: str, model_override: str = None, max_tokens: int = 512) -> str:
         """Standard async generation (used for HyDE/HyPE with 7B)."""

@@ -10,7 +10,8 @@ import pipeline.rag_engine as rag_mod
 from lightrag import QueryParam
 
 # Global setting to prevent infinite re-retrieval loops in CRAG
-MAX_RETRIES = 2
+# Set to 0 to bypass generation stalls on structural sections.
+MAX_RETRIES = 0
 
 async def faiss_semantic_search(embedding: list[float], top_k: int = 10) -> List[Dict[str, Any]]:
     """Mock FAISS Dense Vector Search finding closest RAPTOR nodes."""
@@ -24,9 +25,17 @@ async def lightrag_graph_search(query: str, mode: str = "hybrid") -> List[Dict[s
         
     try:
         # We use LightRAG's query_with_stream or raw query logic
-        result = await rag_mod.rag_instance.aquery(query, param=QueryParam(mode=mode))
-        if result:
-            return [{"chunk": result, "score": 1.0, "source": "lightrag"}]
+        try:
+            # ONLY extract the context string to prevent LightRAG from blocking the LLM for 360+ seconds
+            result = await rag_mod.rag_instance.aquery(query, param=QueryParam(mode=mode, only_need_context=True))
+            if result:
+                # If only_need_context=True, result might be a dictionary or string depending on LightRAG version
+                # If it's a string, wrap it. If it throws an exception upstream, the robust return_exceptions handler catches it.
+                context_str = str(result)
+                return [{"chunk": context_str, "score": 1.0, "source": "lightrag"}]
+        except Exception as query_err:
+            print(f"LightRAG internal query err: {query_err}")
+            
         return []
     except Exception as e:
         print(f"LightRAG search err: {e}")
@@ -73,11 +82,15 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
     hyde_embedding = bge_m3.embed_dense([hyde_doc])[0].tolist()
 
     # Step 3: A-RAG - parallel retrieval with all 3 tools
-    results_lists = await asyncio.gather(
+    results_lists_raw = await asyncio.gather(
         faiss_semantic_search(hyde_embedding, top_k=10),
         redis_bm25.search(query, top_k=10),
-        lightrag_graph_search(query, mode="hybrid")
+        lightrag_graph_search(query, mode="hybrid"),
+        return_exceptions=True
     )
+    
+    # Filter out exceptions and ensure we only process successful Lists
+    results_lists = [r for r in results_lists_raw if isinstance(r, list)]
 
     # Step 4: Merge and deduplicate
     merged_text_chunks = deduplicate_rrf(results_lists)
@@ -85,10 +98,11 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
         merged_text_chunks = ["System Error: No documents found in database."]
 
     # Step 5: CRAG - score relevance using Cross-Encoder Reranker
-    scored_results = bge_reranker.rerank_and_score(query, merged_text_chunks)
+    loop = asyncio.get_event_loop()
+    scored_results = await loop.run_in_executor(None, bge_reranker.rerank_and_score, query, merged_text_chunks)
     
-    # Discard non-relevant chunks
-    filtered = [item["chunk"] for item in scored_results if item["score"] > 0.3]
+    # Discard non-relevant chunks (lowered to 0.0 to guarantee structural data is fed to generation)
+    filtered = [item["chunk"] for item in scored_results if item["score"] > 0.0]
     
     # Step 6: If average quality is too low, re-retrieve up to MAX_RETRIES
     if not filtered or (sum(item["score"] for item in scored_results[:len(filtered)]) / max(len(filtered), 1)) < 0.2:

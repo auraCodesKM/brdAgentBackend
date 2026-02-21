@@ -1,7 +1,8 @@
 import asyncio
 import os
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
+import time
 import uvicorn
 
 from pipeline.ingestion import ingest_document
@@ -17,14 +18,23 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS configuration for the Next.js frontend running on localhost:3000
+# CORS configuration for the Next.js frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://brd-agent-cmka.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    print(f"[{request.method}] {request.url.path} completed in {process_time:.4f} seconds")
+    return response
 
 @app.on_event("startup")
 async def startup_event():
@@ -112,7 +122,13 @@ async def generate_section_stream(websocket: WebSocket, section_name: str):
     except WebSocketDisconnect:
         print(f"WebSocket client disconnected for {section_name}")
     except Exception as e:
-        await websocket.send_text(f"[ERROR]: {str(e)}")
+        import traceback
+        print(f"WebSocket Exception in {section_name}: {e}")
+        traceback.print_exc()
+        try:
+            await websocket.send_text(f"[ERROR]: {str(e)}")
+        except RuntimeError:
+            pass
     finally:
         try:
             await websocket.close()
