@@ -1,16 +1,20 @@
-# Advanced BRD Generation Backend
+# 🧠 BRD Agent: Local Advanced RAG Backend
+> **The most sophisticated RAG Engine ever deployed for a hackathon.**
+> Built locally on an RTX 4090. Zero API calls. Zero data leaks.
+
+Welcome to the central intelligence of the BRD Agent. This Python FastAPI backend orchestrates **9 different breakthrough techniques from 2025-2026 AI research** to transform messy unstructured data into pristine Business Requirement Documents.
+
+---
+
 ## ⚡ Cache Architecture
 We employ a severe, zero-bloat 3-tier caching system optimizing for Mumbai free-tier Upstash boundaries:
 
 *   **L1 TTLCache:** In-memory TTLCache (100 items, 5min, zero LLM latency)
 *   **L2 Upstash Redis:** Hosted Mumbai (persistent, shared, ~30ms latency, gzip compressed payload)
-*   **L3 vLLM Inference:** Full GPU execution (2-10 seconds)
+*   **L3 vLLM Inference:** Full Qwen 32B GPU execution (2-10 seconds)
     
 *Estimated Upstash usage:* ~30MB storage, ~5MB/day bandwidth
 *Free tier headroom:* 88% storage remaining, 99.95% bandwidth remaining
-This is the most sophisticated RAG Engine ever deployed for a hackathon. It utilizes 9 different breakthrough techniques from 2025-2026 AI research, running entirely locally on an RTX 4090.
-
-## 🏗️ System Architecture & Data Flow
 The architecture is divided into two highly asynchronous, parallelized pipelines to ensure maximum throughput on the RTX 4090.
 
 ```mermaid
