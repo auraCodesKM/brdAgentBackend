@@ -19,9 +19,10 @@ This is the most sophisticated RAG Engine ever deployed for a hackathon. It util
 
 ## Exact Startup Commands
 
-### 1. Start Redis Server
+### 1. Clone the Repository
 ```bash
-docker run -d --name redis-stack -p 6379:6379 redis/redis-stack:latest
+git clone https://github.com/auraCodesKM/brdAgentBackend.git
+cd brdAgentBackend
 ```
 
 ### 2. Start vLLM with Speculative Decoding
