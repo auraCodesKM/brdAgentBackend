@@ -1,61 +1,67 @@
 <div align="center">
 
 # 🧠 BRD Agent (Backend Node)
-### Advanced RAG Inference Engine
+### Advanced Graph-RAG Inference Engine
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
-[![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)](https://upstash.com/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)](https://pytorch.org/)
+[![Ollama](https://img.shields.io/badge/Ollama-FFFFFF?style=for-the-badge&logo=Ollama&logoColor=black)](https://ollama.com/)
+[![LightRAG](https://img.shields.io/badge/LightRAG-4CAF50?style=for-the-badge)](https://github.com/LightRAG)
 
-> **The most sophisticated RAG Engine ever deployed for a hackathon.**  
+> **A hardcore, fully local Graph-RAG pipeline deployed for HackFest 2.0.**  
 > Built locally on an RTX 4090. Zero external API calls. Zero data leaks.
 
 </div>
 
-Welcome to the central intelligence of the BRD Agent. This Python FastAPI backend orchestrates **9 different breakthrough techniques from 2025-2026 AI research** to transform messy unstructured data into pristine Business Requirement Documents.
+Welcome to the central intelligence of the BRD Agent. This Python FastAPI backend orchestrates a deeply customized **LightRAG Knowledge Graph** and **Qwen 2.5 32B** to transform messy unstructured data into pristine Business Requirement Documents.
 
 ---
 
-## ⚡ Architecture Overview
-This is the most sophisticated RAG Engine ever deployed for a hackathon. It utilizes 9 different breakthrough techniques from 2025-2026 AI research, running entirely locally on an RTX 4090, orchestrating Graph RAG, Semantic Caching, and Streaming Generation.
+## ⚡ Architecture Reality Check (Hackathon Execution)
+We architected a massive 9-technique pipeline, but building locally on Windows with strict 24GB VRAM limits forced us to engineer **graceful fallbacks**. 
 
-## 🏗️ System Architecture & Data Flow
+This is the transparent, functioning state of our application right now:
+
+### 🟢 100% Real and Functioning in Production:
+*   **LightRAG Knowledge Graph Search:** Extremely robust. `nano-vectordb` parses entities, builds relationships, and writes them directly to `graph_chunk_entity_relation.graphml`.
+*   **Ollama + Qwen 2.5 32B Inference:** We are running a massive 32 Billion parameter model locally across the HTTPX client generating schema-adherent markdown.
+*   **WebSocket Streaming:** The `asyncio` generator catches tokens from Ollama and pumps them immediately to the frontend, preventing 120s long-polling blocks.
+*   **DeepMind Prompt Repetition:** (arXiv:2512.14982) We utilize the `<instruction><context><instruction>` dual-sandwich to physically force the 32B model's attention heads to obey formatting rules.
+*   **Conflict & Traceability:** Real-time generation of JSON Traceability matrices mapping contradictory stakeholder requirements.
+
+### 🟡 Graceful Fallbacks (Infrastructure Constraints):
+*   *MinerU Vision**: `magic-pdf` failed on the Windows environment. The ingestion layer gracefully catches this and falls back to robust text extraction.
+*   *Upstash Redis & CRAG*: Free-tier limits gracefully disable `FT.SEARCH` caching, dynamically shifting the entire routing payload onto the robust **LightRAG** and **FAISS Dense Vectors**.
+*   *vLLM 72B*: Scaling down from 72B on vLLM to exactly **32B on Ollama** allowed us to fit flawlessly within the 24GB VRAM of a single consumer RTX 4090 without OOM crashing.
+
+## 🏗️ System Architecture & Data Flow (Current Execution Map)
 
 ```mermaid
 graph TD
     %% Ingestion Flow
     subgraph Ingestion Pipeline [Index Time]
-        A[Raw Doc: EML/PDF/CSV] -->|Document Parser| B(Clean Markdown)
+        A[Raw Doc: EML/PDF/CSV] -->|Fallback Standard Text| B(Clean Markdown)
         B -->|Semantic Sliding Window| C[Text Chunks]
         C -->|LightRAG Entity Extraction| D(Knowledge Graph Nodes/Edges)
         
         C --> F[(FAISS Dense Vectors)]
-        C --> G[(Redis BM25 Sparse Map)]
         D --> H[(LightRAG Graph DB)]
     end
 
     %% Retrieval Flow
     subgraph Generation Pipeline [Query Time]
-        I[Client Query via REST/WS] -->|Redis Semantic Cache| J{Cache Hit?}
-        J -->|Yes > 0.88| K[Instant L1/L2 Return - 0ms]
-        
-        J -->|No| L[Query Formulation]
+        I[Client Query via REST/WS] --> L[Query Formulation]
         L --> M[A-RAG Parallel Fetch]
         
         M -->|Dense| F
-        M -->|Sparse| G
         M -->|Graph| H
         
-        F & G & H --> N[Context Aggregation]
-        N -->|BGE Cross-Encoder| O[CRAG Scoring & Filtering]
+        F & H --> N[Context Aggregation]
         
-        O -->|Prompt Repetition| R[Ollama: Qwen 2.5 32B Inference]
+        N -->|DeepMind Prompt Repetition| R[Ollama: Qwen 2.5 32B Inference]
         R -->|WebSocket Streaming| S[Frontend UI]
     end
 ```
-
-## 🧠 Core Technologies & Breakthroughs
 
 ### 1. LightRAG Knowledge Graph Search
 * **What:** Entity and relational extraction integrated with traditional vector representations.
@@ -65,21 +71,37 @@ graph TD
 * **What:** Wrapping the context block with `<PROMPT>...<PROMPT>`.
 * **Why:** Repeating the system prompt before and after the context block significantly boosts LLM attention on long-context tasks, effectively halting instructions from "washing out" during large graph retrievals.
 
-### 3. Conflict Detection Engine
-* **What:** `GET /conflicts` algorithm leveraging Graph node intersections.
-* **Why:** When managing 10+ stakeholder emails, contradictions arise (e.g., Kenneth Lay wants SSO by Dec 31st vs Jeff Skilling proposing Jan 15th). Our backend algorithm cross-references constraints and dynamically returns bounded JSON conflict reports highlighting these explicit contradictions.
+## 🔍 Real Pipeline Output (Proof of Execution)
 
-### 4. Graph-backed Traceability Matrix
-* **What:** `GET /traceability` dynamic endpoint.
-* **Why:** Enterprise BRDs mandate that every requirement maps to its originating stakeholder and source document. We organically construct a comprehensive Traceability Matrix JSON array querying all requirement constraint nodes inside the LightRAG GraphDB.
+Our `GET /traceability` endpoints traverse the local `nano-vectordb` Graph to output exact JSON origin matrices for every generated requirement:
 
-### 5. Multi-vector Scoring (CRAG)
-* **What:** Corrective-RAG dynamically filtering retrieved chunks natively using `bge-reranker-large`.
-* **Why:** The system reads the generated query and the extracted chunks *together* assigning a confidence score. If average validity falls beneath configured thresholds (e.g. `> 0.3`), the pipeline drops hallucinations before they reach the main inference loop.
+```json
+{
+    "status":  "success",
+    "matrix":  [
+       {
+           "req_id":  "REQ-001",
+           "description":  "The platform must handle 50,000 concurrent users during peak trading hours.",
+           "source":  "email.eml",
+           "owner":  "Enron Board"
+       },
+       {
+           "req_id":  "REQ-002",
+           "description":  "Traders need real-time Profit and Loss (P&L) display with data refresh times under 500 milliseconds.",
+           "source":  "email.eml",
+           "owner":  "Traders"
+       },
+       {
+           "req_id":  "REQ-009",
+           "description":  "All financial transactions at Enron must be encrypted using AES-256 encryption standards.",
+           "source":  "email.eml",
+           "owner":  "Security Team"
+       }
+   ]
+}
+```
 
-### 6. Streaming Real-Time WebSockets
-* **What:** Non-blocking async endpoints routing tokens over `ws://localhost:8000/api/generate/stream/{section}`.
-* **Why:** Qwen 32B generates high-quality output natively on the RTX 4090, but sequential generation blocks UI UX. Pumping tokens immediately to the Frontend via websockets creates a dramatically smoother and highly responsive impression.
+This strict JSON formatting is accomplished natively by **Qwen-2.5 32B via Ollama**, proving massive generative capabilities without relying on commercial APIs.
 
 ## Complete Tech Matrix
 - **Core Orchestrator**: FastAPI, Uvicorn, Python `asyncio`
