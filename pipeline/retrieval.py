@@ -76,18 +76,14 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
         print(f"CACHE HIT for {section_name}")
         return ["__CACHE_HIT__", cached] # We return the final cached answer as the context, bypassing generation entirely if needed (generator will catch this)
 
-    # Step 2: HyDE - generate hypothetical answer using Prompt Repetition
-    hyde_prompt = f"Write a brief BRD {section_name} section: {query}\n\nWrite a brief BRD {section_name} section: {query}"
-    hyde_doc = await vllm_engine.generate(hyde_prompt)
-    
-    # Run heavy embedding blocking task out of the main event loop
+    # Step 2: Direct Embedding (Bypassing HyDE to eliminate LLM latency)
     def _get_embed():
-        return bge_m3.embed_dense([hyde_doc])[0].tolist()
-    hyde_embedding = await asyncio.to_thread(_get_embed)
+        return bge_m3.embed_dense([query])[0].tolist()
+    query_embedding = await asyncio.to_thread(_get_embed)
 
     # Step 3: A-RAG - parallel retrieval with all 3 tools
     results_lists_raw = await asyncio.gather(
-        faiss_semantic_search(hyde_embedding, top_k=10),
+        faiss_semantic_search(query_embedding, top_k=10),
         redis_bm25.search(query, top_k=10),
         lightrag_graph_search(query, mode="hybrid"),
         return_exceptions=True

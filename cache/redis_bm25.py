@@ -52,13 +52,15 @@ class RedisBM25Index:
 
     async def search(self, query_str: str, top_k: int = 10):
         """
-        Perform a BM25 sparse search using RediSearch.
+        Perform a BM25 sparse search using RediSearch in a background thread.
         """
+        import asyncio
         clean_query = query_str.replace(":", " ").replace("-", " ")
         q = Query(clean_query).paging(0, top_k).with_scores()
         
         try:
-            results = self.redis.ft(self.index_name).search(q)
+            # Shift the synchronous Redis search off the main event loop
+            results = await asyncio.to_thread(self.redis.ft(self.index_name).search, q)
             formatted = []
             for doc in results.docs:
                 formatted.append({

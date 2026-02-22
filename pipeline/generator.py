@@ -355,57 +355,33 @@ def format_context(context_chunks: List[str]) -> str:
     return "\n\n---\n\n".join(context_chunks)
 
 async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[str, None]:
+    # Stream immediately to the UI so it doesn't look frozen while waiting for the Semaphore
+    yield f"*(Queueing **{section_name}** for generation...)*\n\n"
+    
     async with generation_semaphore:
+        yield "*(Retrieving corporate context...)*\n\n"
         # 1. Autonomous Retrieval
         context_chunks = await enhanced_retrieve(query, section_name)
     
         # Check cache hit
         if len(context_chunks) == 2 and context_chunks[0] == "__CACHE_HIT__":
+             yield "*(Cache hit! Loading section...)*\n\n"
              yield context_chunks[1]
              return
     
         raw_context = format_context(context_chunks)
         
-        # RESEARCH TECHNIQUE 2: Chain of Density (Pass 1 - Fact Extraction)
-        # We use a fast draft model to pull facts efficiently
-        facts = await vllm_engine.generate(PASS_1_PROMPT.format(context=raw_context), model_override=vllm_engine.draft_model, temperature=0.2)
-        
-        # RESEARCH TECHNIQUE 1 is embedded directly into these formal prompts (Sandwich Repetition)
+        # We pass the raw context directly to the final formatting prompt to save 4+ minutes of inference latency
         section_prompt_template = SECTION_PROMPTS.get(section_name, "Write this BRD section.")
-        full_prompt = section_prompt_template.format(context=facts)
+        full_prompt = section_prompt_template.format(context=raw_context)
         
         completed_section = ""
         
-        # RESEARCH TECHNIQUE 3: Self-Consistency Prompting
-        if section_name in ['functional_requirements', 'non_functional_requirements']:
-            # Generate A & B concurrently to drastically cut latency
-            task_a = vllm_engine.generate(full_prompt, temperature=0.3, max_tokens=2048, model_override=vllm_engine.model)
-            task_b = vllm_engine.generate(full_prompt, temperature=0.7, max_tokens=2048, model_override=vllm_engine.model)
-            output_a, output_b = await asyncio.gather(task_a, task_b)
-            
-            merge_prompt = f"""
-            Two analysts independently wrote requirements from the same data.
-            Merge them into one list keeping only requirements that appear in BOTH versions.
-            Remove any requirement that only appears in one version.
-
-            Version A:
-            {output_a}
-
-            Version B:
-            {output_b}
-
-            Merged requirements (only those in both):
-            """
-            
-            # Use 7B/draft_model via streaming for final output return
-            async for token in vllm_engine.generate_stream(merge_prompt, model_override=vllm_engine.draft_model, temperature=0.2):
-                completed_section += token
-                yield token
-        else:
-            # Standard single pass professional document (Pass 2)
-            async for token in vllm_engine.generate_stream(full_prompt, temperature=0.2):
-                completed_section += token
-                yield token  # Yield to WebSocket
+        yield "*(Synthesizing professional document block...)*\n\n---\n\n"
+        # Standard single pass professional document streaming
+        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.2):
+            completed_section += token
+            yield token  # Yield to WebSocket
     
         # Cache the finalized result
         redis_cache.store(query, section_name, completed_section)
