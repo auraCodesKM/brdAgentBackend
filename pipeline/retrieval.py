@@ -72,7 +72,7 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
     
     # Step 1: Check Redis semantic cache first
     cached = redis_cache.check(query, section_name=section_name, threshold=0.88)
-    if cached:
+    if False and cached: # BYPASS CACHE TO FLUSH OLD HTML FORMATS
         print(f"CACHE HIT for {section_name}")
         return ["__CACHE_HIT__", cached] # We return the final cached answer as the context, bypassing generation entirely if needed (generator will catch this)
 
