@@ -337,6 +337,7 @@ CRITICAL AESTHETICS:
   * Example Priority: **[MUST HAVE]**, **[SHOULD HAVE]**, **[NICE TO HAVE]**
   * Example Status: **[CONFIRMED]**, **[AT RISK]**, **[UNRESOLVED]**
 - Markdown Tables MUST be perfectly formatted. ALWAYS place a blank newline before and after a table. Make sure every row accurately aligns the `|` pipes.
+- Mermaid Diagrams MUST use strict, valid syntax. Close all brackets and parentheses correctly. Do not use experimental Gantt features.
 """
 
 for k in SECTION_PROMPTS:
@@ -384,11 +385,12 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
         
         yield "*(Synthesizing professional document block...)*\n\n---\n\n"
         
-        # Route ALL sections to the 7B Fast Model to strictly cut Latency by an additional 50% globally
-        target_model = vllm_engine.draft_model
+        # Route complex formatting strictly to 32B. Narrative only to 7B Fast Model.
+        FAST_SECTIONS = ['executive_summary', 'business_objectives', 'stakeholder_analysis', 'assumptions', 'success_metrics']
+        target_model = vllm_engine.draft_model if section_name in FAST_SECTIONS else None
         
         # Standard single pass professional document streaming
-        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.1, model_override=target_model):
+        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.0, model_override=target_model):
             completed_section += token
             yield token  # Yield to WebSocket
     
