@@ -359,7 +359,6 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
         # 1. Autonomous Retrieval
         context_chunks = await enhanced_retrieve(query, section_name)
     
-    async with generation_semaphore:
         # Check cache hit
         if len(context_chunks) == 2 and context_chunks[0] == "__CACHE_HIT__":
              yield context_chunks[1]
@@ -379,10 +378,10 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
         
         # RESEARCH TECHNIQUE 3: Self-Consistency Prompting
         if section_name in ['functional_requirements', 'non_functional_requirements']:
-            # Generate A (Low Temp)
-            output_a = await vllm_engine.generate(full_prompt, temperature=0.3, max_tokens=2048, model_override=vllm_engine.model)
-            # Generate B (High Temp)
-            output_b = await vllm_engine.generate(full_prompt, temperature=0.7, max_tokens=2048, model_override=vllm_engine.model)
+            # Generate A & B concurrently to drastically cut latency
+            task_a = vllm_engine.generate(full_prompt, temperature=0.3, max_tokens=2048, model_override=vllm_engine.model)
+            task_b = vllm_engine.generate(full_prompt, temperature=0.7, max_tokens=2048, model_override=vllm_engine.model)
+            output_a, output_b = await asyncio.gather(task_a, task_b)
             
             merge_prompt = f"""
             Two analysts independently wrote requirements from the same data.

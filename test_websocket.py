@@ -22,18 +22,12 @@ async def fetch_section(section_name: str) -> str:
     return content
 
 async def main():
-    print("Fetching Executive Summary...")
-    exec_summary = await fetch_section("executive_summary")
+    print("Fetching Timeline...")
+    timeline_res = await fetch_section("timeline")
     
-    print("Fetching Functional Requirements...")
-    func_reqs = await fetch_section("functional_requirements")
-    
-    with open("generation_results.md", "w", encoding="utf-8") as f:
-        f.write("# Executive Summary Validation:\n\n")
-        f.write(exec_summary)
-        f.write("\n\n---\n\n")
-        f.write("# Functional Requirements Validation:\n\n")
-        f.write(func_reqs)
+    with open("timeline_verification.md", "w", encoding="utf-8") as f:
+        f.write("# Timeline Section Validation:\n\n")
+        f.write(timeline_res)
         f.write("\n\n")
 
 if __name__ == "__main__":
