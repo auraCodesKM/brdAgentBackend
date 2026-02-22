@@ -149,7 +149,19 @@ class EmailPayload(BaseModel):
 @app.post("/ingest/email")
 async def ingest_email(payload: EmailPayload):
     content = payload.text.encode("utf-8")
-    metadata = {"filename": "email.eml", "content_type": "message/rfc822"}
+    
+    sender = "unknown_sender"
+    subject = "unknown_subject"
+    for line in payload.text.split('\n'):
+        if line.startswith("From:"):
+            sender = line.split("From:", 1)[1].strip()
+        elif line.startswith("Subject:"):
+            subject = line.split("Subject:", 1)[1].strip()
+            
+    doc_id = f"{sender}_{subject[:30]}".replace(' ', '_').replace('@', '_')
+    source_name = f"{sender} — {subject}"
+    
+    metadata = {"filename": source_name, "content_type": "message/rfc822", "doc_id": doc_id}
     result = await ingest_document(content, metadata)
     return {"status": "success", "details": result}
 

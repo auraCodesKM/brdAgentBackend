@@ -23,7 +23,7 @@ class OllamaClient:
         self.draft_model = FAST_MODEL
         self.model = QUALITY_MODEL
 
-    async def generate_stream(self, prompt: str, model_override: str = None, temperature: float = 0.2, max_tokens: int = 8192):
+    async def generate_stream(self, prompt: str, model_override: str = None, temperature: float = 0.2, max_tokens: int = 8192, stop: list = None):
         """Asynchronously stream tokens using AsyncOpenAI."""
         model_to_use = model_override or self.model
         client = fast_client if model_to_use == self.draft_model else quality_client
@@ -33,7 +33,8 @@ class OllamaClient:
             prompt=prompt,
             max_tokens=max_tokens,
             temperature=temperature,
-            stream=True
+            stream=True,
+            stop=stop
         )
         async for chunk in response:
             if chunk.choices and len(chunk.choices) > 0:

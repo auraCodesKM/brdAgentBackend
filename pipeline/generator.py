@@ -112,13 +112,14 @@ For each named individual in the communications:
 | **Known Conflicts** | Disagreements with other stakeholders |
 
 ### 3.2 Stakeholder Conflict Register
-For each identified conflict between stakeholders:
-
-**CONFLICT-[N]: [Conflict Title]**
-- **Parties:** Who disagrees
-- **Issue:** What they disagree about
-- **Impact:** What happens if unresolved
-- **Resolution Required By:** Deadline if mentioned
+STRICT RULE FOR CONFLICT REGISTER:
+List ONLY conflicts explicitly stated in the source communications.
+A conflict exists ONLY when two named people express opposing positions
+on the exact same topic in the same email thread.
+Maximum 5 conflicts total. When you reach 5, stop immediately.
+Do not repeat, rephrase or infer any additional conflicts.
+After your last conflict write exactly: "--- End of Conflict Register ---"
+Then stop. Generate no more content for this section.
 
 Write now:
 """
@@ -132,7 +133,8 @@ Context from business communications:
 {CORE_INSTRUCTION}
 
 Write the Functional Requirements section. Every requirement must be
-traceable to the source communications. Use this structure:
+traceable to the source communications. Extract only the most critical
+requirements explicitly mentioned in the text (maximum 10 total).
 
 ## Functional Requirements
 
@@ -142,8 +144,6 @@ traceable to the source communications. Use this structure:
 - **Source:** [Stakeholder name and communication reference]
 - **Priority:** Must Have / Should Have / Nice to Have
 - **Acceptance Criteria:** How this will be tested
-
-(Continue FR-002, FR-003 etc for all auth requirements)
 
 ### 4.2 Performance & Scalability
 (Same format, continue requirement numbering)
@@ -313,6 +313,17 @@ SECTION_PROMPTS = {
     "timeline": TIMELINE_PROMPT
 }
 
+SECTION_MAX_TOKENS = {
+    'executive_summary': 1200,
+    'stakeholder_analysis': 1500,  # Hard cap prevents looping
+    'functional_requirements': 2000,
+    'non_functional_requirements': 1800,
+    'business_objectives': 1200,
+    'assumptions': 1200,
+    'success_metrics': 1500,
+    'timeline': 1800
+}
+
 CRITICAL_ANTI_HALLUCINATION = """
 CRITICAL: Do not invent any project names, company names, system names,
 person titles, dates, numbers, or facts not explicitly stated in the source
@@ -346,7 +357,9 @@ CRITICAL AESTHETICS:
 """
 
 for k in SECTION_PROMPTS:
-    SECTION_PROMPTS[k] = SECTION_PROMPTS[k].replace("Write now:", f"{CRITICAL_ANTI_HALLUCINATION}\n{FORMAT_REQUIREMENTS}\n\nWrite now:")
+    section_title_mapped = k.replace('_', ' ').title()
+    STOP_INSTRUCTION = f'\nWhen you have completed all subsections of this section, write:\n"--- End of {section_title_mapped} ---"\nand stop generating immediately. Do not add summaries, notes,\nor additional content after this marker.\n'
+    SECTION_PROMPTS[k] = SECTION_PROMPTS[k].replace("Write now:", f"{CRITICAL_ANTI_HALLUCINATION}\n{FORMAT_REQUIREMENTS}\n{STOP_INSTRUCTION}\nWrite now:")
 
 PASS_1_PROMPT = """
 From the following business communications, extract every concrete fact,
@@ -394,8 +407,31 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
         FAST_SECTIONS = ['executive_summary', 'business_objectives', 'stakeholder_analysis', 'assumptions', 'success_metrics']
         target_model = vllm_engine.draft_model if section_name in FAST_SECTIONS else None
         
+        # Limit max_tokens for section to prevent runaway generation
+        max_tokens_val = SECTION_MAX_TOKENS.get(section_name, 1800)
+        
+        section_heading_map = {
+            "executive_summary": "## Executive Summary",
+            "stakeholder_analysis": "## Stakeholder",
+            "functional_requirements": "## Functional",
+            "non_functional_requirements": "## Non-Functional",
+            "business_objectives": "## Business Objectives",
+            "assumptions": "## Assumptions",
+            "success_metrics": "## Success Metrics",
+            "timeline": "## Timeline"
+        }
+        
+        stop_sequences = [
+            "--- End of",
+            "CONFLICT-10",  # Hard stop before double digits on conflicts
+        ]
+        
+        for k, v in section_heading_map.items():
+            if k != section_name:
+                stop_sequences.append(v)
+        
         # Standard single pass professional document streaming
-        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.0, model_override=target_model):
+        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.3, model_override=target_model, max_tokens=max_tokens_val, stop=stop_sequences):
             completed_section += token
             yield token  # Yield to WebSocket
     

@@ -103,10 +103,12 @@ async def ingest_document(content: bytes, source_metadata: Dict[str, Any]):
     # Step 5: Insert everything into LightRAG Knowledge Graph
     from pipeline.rag_engine import rag_instance
     if rag_instance:
-        await rag_instance.ainsert(
-            raptor_tree.all_nodes,
-            file_paths=source_metadata.get('filename', 'unknown.doc')
-        )
+        kwargs = {"file_paths": source_metadata.get('filename', 'unknown.doc')}
+        if "doc_id" in source_metadata:
+            kwargs["ids"] = [source_metadata["doc_id"]]
+            await rag_instance.ainsert(content_text, **kwargs)
+        else:
+            await rag_instance.ainsert(raptor_tree.all_nodes, **kwargs)
 
     # Step 6: Update BM25 index in Redis (Sparse Retrieval Map)
     raw_texts = [c.text for c in chunks]
