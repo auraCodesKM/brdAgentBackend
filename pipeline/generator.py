@@ -319,25 +319,61 @@ platform". If a company name is not mentioned, use the email domain
 
 FORMAT_REQUIREMENTS = """
 FORMAT REQUIREMENTS:
-Use rich markdown formatting throughout. Every section must include at least
-one of the following visual elements where relevant:
+Use rich markdown formatting combined with INLINE HTML throughout. 
+Every section must include at least one of the following visual elements where relevant:
 
-- Markdown tables for: stakeholder registers, requirement lists, milestone
-  schedules, KPI tracking, comparison matrices
-- Mermaid diagrams where helpful:
-  * Timeline: use gantt chart
-  * Stakeholder relationships: use graph LR
-  * Phase dependencies: use flowchart TD
+1. HTML-BASED FLOWCHARTS:
+Instead of mermaid flowcharts, generate HTML-based flowcharts using div boxes and arrows with inline styles only.
+For process flows and dependency diagrams, generate HTML div flowcharts like this:
 
-CRITICAL AESTHETICS:
-- DO NOT USE ANY EMOJIS EVER. This is a highly professional enterprise document. No emojis.
-- DO NOT USE HTML TAGS. Use pure rigorous Markdown. 
-- Risk matrices and requirements priority MUST use bold text badges.
-  * Example Risk: **[HIGH RISK]**, **[MEDIUM RISK]**, **[LOW RISK]**
-  * Example Priority: **[MUST HAVE]**, **[SHOULD HAVE]**, **[NICE TO HAVE]**
-  * Example Status: **[CONFIRMED]**, **[AT RISK]**, **[UNRESOLVED]**
-- Markdown Tables MUST be perfectly formatted. ALWAYS place a blank newline before and after a table. Make sure every row accurately aligns the `|` pipes.
-- Mermaid Diagrams MUST use strict, valid syntax. Close all brackets and parentheses correctly. Do not use experimental Gantt features.
+<div style="font-family:monospace;padding:16px">
+<div style="display:flex;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap">
+  <div style="background:#065f46;color:white;padding:8px 16px;border-radius:6px;font-weight:bold">Item 1</div>
+  <div style="font-size:20px">→</div>
+  <div style="background:#1d4ed8;color:white;padding:8px 16px;border-radius:6px;font-weight:bold">Item 2</div>
+</div>
+</div>
+
+Color coding for flowchart boxes:
+- background:#065f46 = completed or confirmed items
+- background:#1d4ed8 = phase milestones
+- background:#b45309 = security or compliance items
+- background:#dc2626 = at risk or blocked items
+- background:#6b7280 = deferred or out of scope
+Never use CSS classes in flowcharts. Only inline styles.
+
+2. HTML-BASED TABLES:
+Replace all markdown tables with HTML tables using inline styles.
+For all data tables generate HTML with inline styles only:
+
+<table style="width:100%;border-collapse:collapse;font-size:14px;margin:16px 0">
+<thead>
+<tr style="background:#065f46;color:white">
+  <th style="padding:10px 12px;text-align:left;border:1px solid #047857">Column 1</th>
+  <th style="padding:10px 12px;text-align:left;border:1px solid #047857">Column 2</th>
+</tr>
+</thead>
+<tbody>
+<tr style="background:#f9fafb">
+  <td style="padding:10px 12px;border:1px solid #e5e7eb">Value</td>
+  <td style="padding:10px 12px;border:1px solid #e5e7eb">Value</td>
+</tr>
+<tr style="background:#ffffff">
+  <td style="padding:10px 12px;border:1px solid #e5e7eb">Value</td>
+  <td style="padding:10px 12px;border:1px solid #e5e7eb">Value</td>
+</tr>
+</tbody>
+</table>
+Alternate row colors between #f9fafb and #ffffff.
+
+3. INLINE HTML STATUS VALUES:
+Status values must use inline colored spans instead of plain text or emojis:
+<span style="color:#16a34a;font-weight:600">Confirmed</span>
+<span style="color:#dc2626;font-weight:600">At Risk</span>
+<span style="color:#d97706;font-weight:600">Unresolved</span>
+<span style="color:#6b7280;font-weight:600">Deferred</span>
+
+CRITICAL: DO NOT USE EMOJIS. DO NOT USE MERMAID. DO NOT USE MARKDOWN TABLES. USE ONLY INLINE HTML.
 """
 
 for k in SECTION_PROMPTS:
