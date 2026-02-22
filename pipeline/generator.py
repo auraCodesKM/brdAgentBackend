@@ -331,10 +331,12 @@ one of the following visual elements where relevant:
 
 CRITICAL AESTHETICS:
 - DO NOT USE ANY EMOJIS EVER. This is a highly professional enterprise document. No emojis.
-- Risk matrices and requirements priority MUST use colored HTML text instead of emojis.
-  * Example Risk: <span style="color:red">High</span>, <span style="color:orange">Medium</span>, <span style="color:green">Low</span>
-  * Example Priority: <span style="color:red">Must Have</span>, <span style="color:orange">Should Have</span>, <span style="color:green">Nice to Have</span>
-  * Example Status: <span style="color:green">Confirmed</span>, <span style="color:red">At Risk</span>, <span style="color:orange">Unresolved</span>
+- DO NOT USE HTML TAGS. Use pure rigorous Markdown. 
+- Risk matrices and requirements priority MUST use bold text badges.
+  * Example Risk: **[HIGH RISK]**, **[MEDIUM RISK]**, **[LOW RISK]**
+  * Example Priority: **[MUST HAVE]**, **[SHOULD HAVE]**, **[NICE TO HAVE]**
+  * Example Status: **[CONFIRMED]**, **[AT RISK]**, **[UNRESOLVED]**
+- Markdown Tables MUST be perfectly formatted. ALWAYS place a blank newline before and after a table. Make sure every row accurately aligns the `|` pipes.
 """
 
 for k in SECTION_PROMPTS:
@@ -382,12 +384,11 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
         
         yield "*(Synthesizing professional document block...)*\n\n---\n\n"
         
-        # Route narratively simple sections to the 7B Fast Model to strictly cut Latency by 50%
-        FAST_SECTIONS = ['executive_summary', 'stakeholder_analysis', 'assumptions', 'success_metrics']
-        target_model = vllm_engine.draft_model if section_name in FAST_SECTIONS else None
+        # Route ALL sections to the 7B Fast Model to strictly cut Latency by an additional 50% globally
+        target_model = vllm_engine.draft_model
         
         # Standard single pass professional document streaming
-        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.2, model_override=target_model):
+        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.1, model_override=target_model):
             completed_section += token
             yield token  # Yield to WebSocket
     
