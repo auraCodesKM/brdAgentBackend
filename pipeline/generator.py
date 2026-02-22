@@ -328,10 +328,13 @@ one of the following visual elements where relevant:
   * Timeline: use gantt chart
   * Stakeholder relationships: use graph LR
   * Phase dependencies: use flowchart TD
-- Risk matrices as formatted tables with color indicators (🔴 High 🟡 Medium 🟢 Low)
-- Priority indicators on every requirement (🔴 Must Have 🟡 Should Have 🟢 Nice to Have)
-- Status indicators on milestones (✅ Confirmed 🔴 At Risk ⚠️ Unresolved)
-BUT DONT FILL THE SYSTEM WITH THESE EMOJIES USE COLOURED TEXTS AND BOXES FOR BETTER AND FORMAT OUR RESPONSES NICELY
+
+CRITICAL AESTHETICS:
+- DO NOT USE ANY EMOJIS EVER. This is a highly professional enterprise document. No emojis.
+- Risk matrices and requirements priority MUST use colored HTML text instead of emojis.
+  * Example Risk: <span style="color:red">High</span>, <span style="color:orange">Medium</span>, <span style="color:green">Low</span>
+  * Example Priority: <span style="color:red">Must Have</span>, <span style="color:orange">Should Have</span>, <span style="color:green">Nice to Have</span>
+  * Example Status: <span style="color:green">Confirmed</span>, <span style="color:red">At Risk</span>, <span style="color:orange">Unresolved</span>
 """
 
 for k in SECTION_PROMPTS:
@@ -378,8 +381,13 @@ async def generate_brd_section(section_name: str, query: str) -> AsyncGenerator[
         completed_section = ""
         
         yield "*(Synthesizing professional document block...)*\n\n---\n\n"
+        
+        # Route narratively simple sections to the 7B Fast Model to strictly cut Latency by 50%
+        FAST_SECTIONS = ['executive_summary', 'stakeholder_analysis', 'assumptions', 'success_metrics']
+        target_model = vllm_engine.draft_model if section_name in FAST_SECTIONS else None
+        
         # Standard single pass professional document streaming
-        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.2):
+        async for token in vllm_engine.generate_stream(full_prompt, temperature=0.2, model_override=target_model):
             completed_section += token
             yield token  # Yield to WebSocket
     
