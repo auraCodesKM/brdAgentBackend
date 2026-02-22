@@ -16,13 +16,13 @@ MAX_EMAILS = 50
 BATCH_SIZE = 5
 MAX_RUNTIME_MINUTES = 10
 
-def get_matching_emails():
+def get_matching_texts():
     print(f"Scanning {EMAILS_DIR} for matching emails...")
-    matching_files = []
+    matching_texts = []
     
     # Try all typical text files
     for filepath in glob.glob(os.path.join(EMAILS_DIR, "**", "*"), recursive=True):
-        if len(matching_files) >= MAX_EMAILS:
+        if len(matching_texts) >= MAX_EMAILS:
             break
             
         if not os.path.isfile(filepath):
@@ -31,24 +31,36 @@ def get_matching_emails():
         try:
             with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
-                lower_content = content.lower()
                 
-                # Check for keywords
-                if any(keyword.lower() in lower_content for keyword in KEYWORDS):
-                    matching_files.append(filepath)
+                # If it's a massive CSV chunk, split it somewhat
+                if filepath.endswith('.csv'):
+                    import csv
+                    from io import StringIO
+                    reader = csv.reader(StringIO(content))
+                    for row in reader:
+                        if len(matching_texts) >= MAX_EMAILS:
+                            break
+                        row_text = " ".join(row)
+                        lower_content = row_text.lower()
+                        if any(keyword.lower() in lower_content for keyword in KEYWORDS):
+                            matching_texts.append(row_text)
+                else:
+                    lower_content = content.lower()
+                    if any(keyword.lower() in lower_content for keyword in KEYWORDS):
+                        matching_texts.append(content)
         except Exception:
             pass
             
-    print(f"Found {len(matching_files)} matching emails.")
-    return matching_files
+    print(f"Found {len(matching_texts)} matching emails.")
+    return matching_texts
 
 def main():
     start_time = time.time()
     max_duration = MAX_RUNTIME_MINUTES * 60
     
-    # 1. Gather files
-    files_to_process = get_matching_emails()
-    if not files_to_process:
+    # 1. Gather texts
+    texts_to_process = get_matching_texts()
+    if not texts_to_process:
         print("No emails found. Exiting.")
         return
         
@@ -69,28 +81,25 @@ def main():
             
         time.sleep(2)
         
-    print(f"Starting ingestion of {len(files_to_process)} emails in batches of {BATCH_SIZE}...")
+    print(f"Starting ingestion of {len(texts_to_process)} emails in batches of {BATCH_SIZE}...")
     
     processed_count = 0
     
     # Process in batches
-    for i in range(0, len(files_to_process), BATCH_SIZE):
+    for i in range(0, len(texts_to_process), BATCH_SIZE):
         if time.time() - start_time > max_duration:
             print(f"Time limit of {MAX_RUNTIME_MINUTES} minutes reached. Stopping early.")
             break
             
-        batch = files_to_process[i:i + BATCH_SIZE]
+        batch = texts_to_process[i:i + BATCH_SIZE]
         print(f"\nProcessing batch {i//BATCH_SIZE + 1} ({len(batch)} emails)...")
         
-        for filepath in batch:
+        for email_content in batch:
             try:
-                with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
-                
                 response = requests.post(
                     API_URL, 
-                    json={"text": content},
-                    timeout=60
+                    json={"text": email_content[:8000]}, # Hard safety limit for payload sizes
+                    timeout=120
                 )
                 
                 if response.status_code == 200:
