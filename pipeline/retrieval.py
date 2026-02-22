@@ -79,7 +79,11 @@ async def enhanced_retrieve(query: str, section_name: str, retry_count: int = 0)
     # Step 2: HyDE - generate hypothetical answer using Prompt Repetition
     hyde_prompt = f"Write a brief BRD {section_name} section: {query}\n\nWrite a brief BRD {section_name} section: {query}"
     hyde_doc = await vllm_engine.generate(hyde_prompt)
-    hyde_embedding = bge_m3.embed_dense([hyde_doc])[0].tolist()
+    
+    # Run heavy embedding blocking task out of the main event loop
+    def _get_embed():
+        return bge_m3.embed_dense([hyde_doc])[0].tolist()
+    hyde_embedding = await asyncio.to_thread(_get_embed)
 
     # Step 3: A-RAG - parallel retrieval with all 3 tools
     results_lists_raw = await asyncio.gather(
