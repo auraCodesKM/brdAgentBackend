@@ -55,6 +55,8 @@ component of this codebase is something I can explain, defend
 and improve. I have context on every decision made at 3 AM
 when it mattered.
 
+BACKEND REQUIRES 24 GB vRAM so it is off currently!
+
 [LinkedIn](https://www.linkedin.com/in/kavin070810/) ·
 [GitHub](https://github.com/auraCodesKM) ·
 [Resume](https://drive.google.com/file/d/1Z1Z0hZhWc8DTKY85Ac2_66sv-A6499Pr/view?usp=sharing)
