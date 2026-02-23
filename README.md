@@ -435,38 +435,51 @@ CONFLICT-2: Authentication Deadline
 
 ---
 
-## Screenshots
+## Screenshots: The BRD Agent Frontend
 
-### Welcome & Overview
-*The primary entry point showing the clean, modern aesthetic.*
+*(Note: While this repository houses the Python/FastAPI backend, the following screenshots showcase our custom-built Next.js frontend. Because the frontend repository is private, we are highlighting the complete user interface here to demonstrate the end-to-end capabilities of the BRD Agent.)*
+
+### 1. Landing Page & Overview
+These screenshots showcase the primary landing page interface, designed with a clean, modern aesthetic. The interface supports full visual theming to accommodate user preferences.
+- **Light Mode**: Displays the crisp, high-contrast entry point.
+- **Dark Mode**: Showcases the sleek, low-light alternative for the main welcome screen.
+
 ![Welcome Overview (Light Mode)](screenshots/01_BRD_Generator_Welcome_Overview.png)
 ![Welcome Overview (Dark Mode)](screenshots/02_BRD_Generator_Welcome_DarkMode.png)
 
-### Three Steps to BRD
-*The user flow outlining the ingestion and generation process.*
-![Three Steps (Light Mode)](screenshots/08_Three_Steps_BRD_LightMode.png)
-![Three Steps (Dark Mode)](screenshots/07_Three_Steps_BRD_DarkMode.png)
+### 2. Data Ingestion Hub
+**Active Data Streams**: This dashboard is where unstructured corporate data (such as Enron corporate emails, meeting transcripts, and Slack dumps) is uploaded, chunked, and parsed into the LightRAG GraphDB and FAISS vector databases.
 
-### Dashboard & Agent Interface
-*The core interface where parallel WebSocket streams synthesize the document.*
+![Active Streams](screenshots/03_Data_Ingestion_Hub_Active_Streams.png)
+
+### 3. Business Requirements Overview
+These sections demonstrate the system successfully generating structured business requirements from the raw Enron dataset, proving the RAG and LLM pipeline's effectiveness at extracting project scope.
+
+![Business Requirements Overview](screenshots/04_Business_Requirements_Overview.png)
+![Advanced RAG Business Requirements](screenshots/05_Advanced_RAG_Business_Requirements.png)
+
+### 4. BRD Agent & Dashboard Components
+This is the core workspace where parallel WebSocket connections stream the generated document sections in real-time. We showcase the various UI components and the simple three-step generation process in both visual themes.
+- **Agent Components Overview**: A high-level view of the modular interface.
+- **Three-Step Process**: The intuitive user flow outlined in Dark Mode and Light Mode.
+- **Core Agent Interface**: The primary generation workspace shown in Light and Dark Modes.
+
 ![Agent Components](screenshots/06_BRD_Agent_Components.png)
+![Three Steps (Dark Mode)](screenshots/07_Three_Steps_BRD_DarkMode.png)
+![Three Steps (Light Mode)](screenshots/08_Three_Steps_BRD_LightMode.png)
 ![Agent Interface (Light Mode)](screenshots/09_BRD_Agent_LightMode.png)
 ![Agent Interface (Dark Mode)](screenshots/10_BRD_Agent_DarkMode.png)
+
+### 5. Executive Summary Synthesis
+A closer look at the synthesized executive summaries. The interface structures the high-level project goals and constraints retrieved directly from the knowledge graph.
+
 ![Executive Summary Dashboard](screenshots/11_Executive_Summary_Dashboard.png)
 ![Executive Summary Menu](screenshots/12_Executive_Summary_MenuInterface.png)
 
-### Data Ingestion Hub
-*Where raw Enron emails and JSON transcripts are converted to structured chunks.*
-![Active Streams](screenshots/03_Data_Ingestion_Hub_Active_Streams.png)
+### 6. Non-Functional & System Features (Deep Dive)
+These detail views show the model's ability to extract specific technical constraints, latency requirements, authentication schemas, and system features from the unstructured conversational data. The generated content is rendered with clean Markdown formatting natively in the browser.
 
-### Generated Document Sections
-*Examples of the rendered RAG output, including tables and formal prose.*
-![Business Requirements Overview](screenshots/04_Business_Requirements_Overview.png)
-![Advanced RAG Business Requirements](screenshots/05_Advanced_RAG_Business_Requirements.png)
 ![Non-Functional Requirements](screenshots/13_NonFunctionalRequirements_Details.png)
-
-### System Features Detail Views
-*A deep dive into the generated functional and system requirements sections.*
 ![System Features 1](screenshots/14_SystemFeatures_DetailView_One.png)
 ![System Features 2](screenshots/15_SystemFeatures_DetailView_Two.png)
 ![System Features 3](screenshots/16_SystemFeatures_DetailView_Three.png)
@@ -476,8 +489,9 @@ CONFLICT-2: Authentication Deadline
 ![System Features 7](screenshots/20_SystemFeatures_DetailView_Seven.png)
 ![System Features 8](screenshots/21_SystemFeatures_DetailView_Eight.png)
 
-### Project Diagrams & Architecture
-*Flowcharts and backend architecture visualizations native to the platform.*
+### 7. Project Diagrams
+Visualizations of the project contact info and architectural flowcharts bridging the frontend and backend.
+
 ![Project Contact Info & Diagrams](screenshots/22_Project_ContactInfo_Diagrams.jpg)
 
 ---
