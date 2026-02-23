@@ -435,7 +435,48 @@ CONFLICT-2: Authentication Deadline
 
 ## Screenshots
 
-*(Add your screenshots to the `screenshots/` folder. They will be displayed here in future commits.)*
+### Welcome & Overview
+*The primary entry point showing the clean, modern aesthetic.*
+![Welcome Overview (Light Mode)](screenshots/01_BRD_Generator_Welcome_Overview.png)
+![Welcome Overview (Dark Mode)](screenshots/02_BRD_Generator_Welcome_DarkMode.png)
+
+### Three Steps to BRD
+*The user flow outlining the ingestion and generation process.*
+![Three Steps (Light Mode)](screenshots/08_Three_Steps_BRD_LightMode.png)
+![Three Steps (Dark Mode)](screenshots/07_Three_Steps_BRD_DarkMode.png)
+
+### Dashboard & Agent Interface
+*The core interface where parallel WebSocket streams synthesize the document.*
+![Agent Components](screenshots/06_BRD_Agent_Components.png)
+![Agent Interface (Light Mode)](screenshots/09_BRD_Agent_LightMode.png)
+![Agent Interface (Dark Mode)](screenshots/10_BRD_Agent_DarkMode.png)
+![Executive Summary Dashboard](screenshots/11_Executive_Summary_Dashboard.png)
+![Executive Summary Menu](screenshots/12_Executive_Summary_MenuInterface.png)
+
+### Data Ingestion Hub
+*Where raw Enron emails and JSON transcripts are converted to structured chunks.*
+![Active Streams](screenshots/03_Data_Ingestion_Hub_Active_Streams.png)
+
+### Generated Document Sections
+*Examples of the rendered RAG output, including tables and formal prose.*
+![Business Requirements Overview](screenshots/04_Business_Requirements_Overview.png)
+![Advanced RAG Business Requirements](screenshots/05_Advanced_RAG_Business_Requirements.png)
+![Non-Functional Requirements](screenshots/13_NonFunctionalRequirements_Details.png)
+
+### System Features Detail Views
+*A deep dive into the generated functional and system requirements sections.*
+![System Features 1](screenshots/14_SystemFeatures_DetailView_One.png)
+![System Features 2](screenshots/15_SystemFeatures_DetailView_Two.png)
+![System Features 3](screenshots/16_SystemFeatures_DetailView_Three.png)
+![System Features 4](screenshots/17_SystemFeatures_DetailView_Four.png)
+![System Features 5](screenshots/18_SystemFeatures_DetailView_Five.png)
+![System Features 6](screenshots/19_SystemFeatures_DetailView_Six.png)
+![System Features 7](screenshots/20_SystemFeatures_DetailView_Seven.png)
+![System Features 8](screenshots/21_SystemFeatures_DetailView_Eight.png)
+
+### Project Diagrams & Architecture
+*Flowcharts and backend architecture visualizations native to the platform.*
+![Project Contact Info & Diagrams](screenshots/22_Project_ContactInfo_Diagrams.jpg)
 
 ---
 
