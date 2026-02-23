@@ -433,6 +433,12 @@ CONFLICT-2: Authentication Deadline
 
 ---
 
+## Screenshots
+
+*(Add your screenshots to the `screenshots/` folder. They will be displayed here in future commits.)*
+
+---
+
 ## Setup
 ```bash
 git clone https://github.com/auraCodesKM/brdAgentBackend.git
