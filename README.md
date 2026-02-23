@@ -439,47 +439,56 @@ CONFLICT-2: Authentication Deadline
 
 *(Note: While this repository houses the Python/FastAPI backend, the following screenshots showcase our custom-built Next.js frontend. Because the frontend repository is private, we are highlighting the complete user interface here to demonstrate the end-to-end capabilities of the BRD Agent.)*
 
-### 1. Landing Page & Overview
-These screenshots showcase the primary landing page interface, designed with a clean, modern aesthetic. The interface supports full visual theming to accommodate user preferences.
-- **Light Mode**: Displays the crisp, high-contrast entry point.
-- **Dark Mode**: Showcases the sleek, low-light alternative for the main welcome screen.
+### 1. Landing Page
 
-![Welcome Overview (Light Mode)](screenshots/01_BRD_Generator_Welcome_Overview.png)
-![Welcome Overview (Dark Mode)](screenshots/02_BRD_Generator_Welcome_DarkMode.png)
+The primary landing page introducing the BRD Agent. This page explains the capabilities of the system, including Advanced RAG operations, local 32B model inference, and the 500K+ Enron dataset processing.
 
-### 2. Data Ingestion Hub
-**Active Data Streams**: This dashboard is where unstructured corporate data (such as Enron corporate emails, meeting transcripts, and Slack dumps) is uploaded, chunked, and parsed into the LightRAG GraphDB and FAISS vector databases.
+![Landing Page (Light Mode)](screenshots/05_Advanced_RAG_Business_Requirements.png)
+![Landing Page (Dark Mode)](screenshots/04_Business_Requirements_Overview.png)
 
-![Active Streams](screenshots/03_Data_Ingestion_Hub_Active_Streams.png)
+### 2. Dashboard Overview
 
-### 3. Business Requirements Overview
-These sections demonstrate the system successfully generating structured business requirements from the raw Enron dataset, proving the RAG and LLM pipeline's effectiveness at extracting project scope.
+The **Dashboard** is the central command center for the application. Here, users get a high-level overview of their generation workspace, including active RAG pipelines, processed documents, and quick links to Data Ingestion and BRD Generation.
 
-![Business Requirements Overview](screenshots/04_Business_Requirements_Overview.png)
-![Advanced RAG Business Requirements](screenshots/05_Advanced_RAG_Business_Requirements.png)
+![Dashboard Overview (Light Mode)](screenshots/01_BRD_Generator_Welcome_Overview.png)
+![Dashboard Overview (Dark Mode)](screenshots/02_BRD_Generator_Welcome_DarkMode.png)
 
-### 4. BRD Agent & Dashboard Components
-This is the core workspace where parallel WebSocket connections stream the generated document sections in real-time. We showcase the various UI components and the simple three-step generation process in both visual themes.
-- **Agent Components Overview**: A high-level view of the modular interface.
-- **Three-Step Process**: The intuitive user flow outlined in Dark Mode and Light Mode.
-- **Core Agent Interface**: The primary generation workspace shown in Light and Dark Modes.
+### 3. Architecture & Capabilities
 
-![Agent Components](screenshots/06_BRD_Agent_Components.png)
-![Three Steps (Dark Mode)](screenshots/07_Three_Steps_BRD_DarkMode.png)
-![Three Steps (Light Mode)](screenshots/08_Three_Steps_BRD_LightMode.png)
-![Agent Interface (Light Mode)](screenshots/09_BRD_Agent_LightMode.png)
-![Agent Interface (Dark Mode)](screenshots/10_BRD_Agent_DarkMode.png)
+This visually detailed section of the application breaks down the core components powering the backend, including the Qwen 32B Local Engine, MinerU Ingestion, CRAG Conflict Resolution, Traceability Matrices, and Instant Generation pipelines.
 
-### 5. Executive Summary Synthesis
-A closer look at the synthesized executive summaries. The interface structures the high-level project goals and constraints retrieved directly from the knowledge graph.
+![Architecture Components](screenshots/06_BRD_Agent_Components.png)
 
-![Executive Summary Dashboard](screenshots/11_Executive_Summary_Dashboard.png)
-![Executive Summary Menu](screenshots/12_Executive_Summary_MenuInterface.png)
+### 4. Data Ingestion Hub
 
-### 6. Non-Functional & System Features (Deep Dive)
-These detail views show the model's ability to extract specific technical constraints, latency requirements, authentication schemas, and system features from the unstructured conversational data. The generated content is rendered with clean Markdown formatting natively in the browser.
+The **Data Ingestion** interface where users can upload and process unstructured corporate data. The UI displays the active data streams being chunked and parsed into the LightRAG GraphDB and FAISS vector databases.
 
-![Non-Functional Requirements](screenshots/13_NonFunctionalRequirements_Details.png)
+![Data Ingestion Hub](screenshots/03_Data_Ingestion_Hub_Active_Streams.png)
+
+### 5. BRD Generation Flow
+
+The onboarding user flow that outlines the intuitive three-step process for generating a complete Business Requirements Document: Select Pipelines, Run Generation, and Review the final structure.
+
+![Generation Flow (Dark Mode)](screenshots/07_Three_Steps_BRD_DarkMode.png)
+![Generation Flow (Light Mode)](screenshots/08_Three_Steps_BRD_LightMode.png)
+
+### 6. Real-Time BRD Generator Interface
+
+The core **BRD Generator** workspace. This is where parallel WebSocket connections stream the generated document sections in real-time. 
+
+When you press **Generate Document**, the system displays its internal retrieval and synthesis steps. You can watch word-by-word as the raw Markdown tokens stream down from the backend (with "thinking" steps like *Queueing*, *Retrieving corporate context...*, and *Synthesizing professional document block...*) and are instantly rendered into formatted UI components.
+
+![Generator Interface Overview (Light Mode)](screenshots/09_BRD_Agent_LightMode.png)
+![Generator Interface Overview (Dark Mode)](screenshots/10_BRD_Agent_DarkMode.png)
+
+![Real-Time Executive Summary Generation](screenshots/11_Executive_Summary_Dashboard.png)
+![Real-Time Executive Summary Streaming](screenshots/12_Executive_Summary_MenuInterface.png)
+![Real-Time Non-Functional Generation](screenshots/13_NonFunctionalRequirements_Details.png)
+
+### 7. Generated Document Detail Views
+
+A deep dive into the perfectly rendered Markdown output generated by the RAG pipeline. These detail views showcase the system gracefully handling complex formatting like robust functional specifications, acceptance criteria tables, error handling metrics, and conflict resolutions.
+
 ![System Features 1](screenshots/14_SystemFeatures_DetailView_One.png)
 ![System Features 2](screenshots/15_SystemFeatures_DetailView_Two.png)
 ![System Features 3](screenshots/16_SystemFeatures_DetailView_Three.png)
@@ -489,10 +498,11 @@ These detail views show the model's ability to extract specific technical constr
 ![System Features 7](screenshots/20_SystemFeatures_DetailView_Seven.png)
 ![System Features 8](screenshots/21_SystemFeatures_DetailView_Eight.png)
 
-### 7. Project Diagrams
-Visualizations of the project contact info and architectural flowcharts bridging the frontend and backend.
+### 8. Project Diagrams
 
-![Project Contact Info & Diagrams](screenshots/22_Project_ContactInfo_Diagrams.jpg)
+Visualizations of the project architecture and the GDG Cloud HackFest contact information native to the presentation diagram.
+
+![Project Diagrams](screenshots/22_Project_ContactInfo_Diagrams.jpg)
 
 ---
 
