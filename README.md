@@ -156,36 +156,31 @@ Section structure degradation dropped immediately.
 
 ---
 
-### 2. Scaling LLM Test-Time Compute with Repeated Sampling — Prompt Repetition
-**Leviathan, Kalman, Matias. Google Research, 2024**
+### 2. Prompt Repetition Improves Non-Reasoning LLMs
+**Leviathan, Kalman, Matias. Google, 2025**
 [arxiv.org/abs/2512.14982](https://arxiv.org/abs/2512.14982)
 
-**What it found:** Repeating key instructions at multiple
-positions within a prompt significantly improves model
-adherence on long-context tasks. The paper demonstrates that
-instruction tokens physically closer to the generation boundary
-receive stronger gradient attention — meaning instructions
-stated only at the top of a long prompt are effectively
-forgotten by the time the model reaches the end of a large
-context block.
+**What it found:** Repeating the input prompt improves
+performance across popular models — Gemini, GPT, Claude,
+Deepseek — without increasing the number of generated tokens
+or adding any latency cost. The finding is simple and
+surprisingly powerful: just send the prompt twice.
 
-**Why we read it:** We were combining this with the Lost in
-the Middle finding above. Even after sandwiching the context
-between two instruction copies, we were still seeing
-formatting drift on our longest sections — Functional
-Requirements and Stakeholder Analysis — where the model would
-start generating cleanly and then gradually drop table
-formatting, skip acceptance criteria, or revert to prose
-halfway through a structured list.
+**Why we read it:** We were seeing formatting drift on our
+longest sections. The model would start a Functional
+Requirements table correctly and then gradually lose structure
+mid-section — dropping acceptance criteria columns, skipping
+source attribution, reverting to prose. The context block was
+too long and the original instruction was washing out.
 
-**What we changed:** Every section prompt now ends with a
-compressed restatement of the core formatting rules — table
-structure, requirement numbering, source attribution format —
-immediately before the generation boundary. This is the
-instruction the model attends to most strongly. Combined
-with the sandwich pattern from paper one, formatting
-consistency across all eight sections became reliable rather
-than probabilistic.
+**What we changed:** Every section prompt now sends the core
+instruction twice — once before the context block and once
+after it, immediately before the generation boundary. The
+instruction the model sees last is the one it attends to most
+strongly. Combined with the sandwich pattern from the Lost in
+the Middle finding, formatting consistency across all eight
+sections became reliable rather than probabilistic. Zero
+added latency, measurable improvement in section structure.
 
 ---
 
