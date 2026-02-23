@@ -10,7 +10,7 @@
 [![LightRAG](https://img.shields.io/badge/LightRAG-4CAF50?style=for-the-badge)](https://github.com/LightRAG)
 [![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/)
 
-*Built at HackFest 2.0, GDG Cloud New Delhi — 50 hours, zero sleep, fourth place.*
+*Built at HackFest 2.0, GDG Cloud New Delhi. 50 hours, zero sleep, fourth place.*
 
 </div>
 
@@ -18,7 +18,7 @@
 
 ## About the Builder
 
-I am Kavin Thakur — second year CS student specialising in ML/AI
+I am Kavin Thakur, second year CS student specialising in ML/AI
 at Chitkara University, currently working as Visiting Researcher (AI/ML) at
 National Ilan University in Taiwan. My research there focuses on
 real-time computer vision pipelines and edge AI inference on
@@ -30,10 +30,10 @@ engineering is the same constraint-solving I do daily on HPC
 systems.
 
 Team M-2.5 built this backend from scratch over 50 consecutive
-hours at HackFest 2.0. Every architectural decision — the
+hours at HackFest 2.0. Every architectural decision, the
 knowledge graph integration, the VRAM constraint engineering,
 the parallel WebSocket streaming, the research paper
-implementations — was designed and debugged under competition
+implementations, was designed and debugged under competition
 pressure with a live judging deadline.
 
 This is not the first system I have built under pressure. I won
@@ -45,12 +45,12 @@ IEEE CIET as Technical Head and serve as AI/ML Executive at GDG
 Chitkara. I also served as a Data Science Intern at Infomo
 Global after my first semester.
 
-I care about building things that actually work — not demos,
+I care about building things that actually work, not demos,
 not API wrappers, but real pipelines with real engineering
 decisions and real constraints behind them.
 
 If you are from Turgon AI and reading this while evaluating
-internship candidates — I would genuinely love to talk. Every
+internship candidates, I would genuinely love to talk. Every
 component of this codebase is something I can explain, defend
 and improve. I have context on every decision made at 3 AM
 when it mattered.
@@ -59,16 +59,18 @@ when it mattered.
 [GitHub](https://github.com/auraCodesKM) ·
 [Resume](https://drive.google.com/file/d/1Z1Z0hZhWc8DTKY85Ac2_66sv-A6499Pr/view?usp=sharing)
 
-The frontend is at
-[auraCodesKM/brdAgent](https://github.com/auraCodesKM/brdAgent)
-— private, DM for access.
+Frontend (live): [brd-agent-cmka.vercel.app](https://brd-agent-cmka.vercel.app/)
+
+Backend repo (this one): 100% Python.
+Frontend repo: [auraCodesKM/brdAgent](https://github.com/auraCodesKM/brdAgent)
+(private, DM for access)
 
 *Fourth place!*
 
 Congratulations to all the winners! 👏
 A big appreciation as well to the organizers for successfully hosting the event.
 
-The links to the winning projects will be updated as soon as they become available. You’re welcome to congratulate the winners!
+The links to the winning projects will be updated as soon as they become available. You're welcome to congratulate the winners!
 Thank you for your attention.
 You can follow the details below.
 
@@ -76,13 +78,13 @@ You can follow the details below.
 
 ## What This Is
 
-BRD Agent transforms unstructured corporate communications —
-emails, meeting transcripts, Slack exports — into complete
+BRD Agent transforms unstructured corporate communications,
+emails, meeting transcripts, Slack exports, into complete
 professional Business Requirements Documents. Eight sections.
 Under three minutes. Fully local. Zero external API calls.
 Zero data leakage.
 
-This repository is the backend inference engine — 100% Python.
+This repository is the backend inference engine, 100% Python.
 The frontend is Next.js with WebSocket streaming and Mermaid
 diagram rendering.
 
@@ -105,7 +107,7 @@ We solved this with three components working together.
 not just text chunks. Kenneth Lay becomes a node. SSO becomes
 a node. The edge between them records that Kenneth Lay mandated
 SSO. When Jeff Skilling later states the SSO deadline is
-January 15th and Kenneth Lay said December 31st — the graph
+January 15th and Kenneth Lay said December 31st, the graph
 detects that contradiction structurally through traversal.
 Prompt engineering alone cannot do this.
 
@@ -116,7 +118,7 @@ relationships. BGE-M3 cross-encoder reranks the merged results
 by relevance to the specific BRD section being generated.
 
 **Three research techniques** applied at generation time
-improve output quality measurably over baseline prompting —
+improve output quality measurably over baseline prompting,
 explained in full below.
 
 ---
@@ -130,13 +132,13 @@ answers. Each one directly changed how we built something.
 
 ---
 
-### 1. Lost in the Middle — How Language Models Use Long Contexts
+### 1. Lost in the Middle: How Language Models Use Long Contexts
 **Liu et al., Stanford / UC Berkeley, 2023**
 [arxiv.org/abs/2307.03172](https://arxiv.org/abs/2307.03172)
 
 **What it found:** When you give a language model a long context
 window, it pays strong attention to content at the very
-beginning and very end — and systematically ignores content
+beginning and very end, and systematically ignores content
 in the middle. The paper measured this across multiple models
 and tasks and the degradation was severe and consistent.
 
@@ -148,7 +150,7 @@ structure mid-section, sometimes reverting to raw graph output
 halfway through a requirement list.
 
 **What we changed:** We restructured every prompt so that the
-most important formatting instruction appears twice — once
+most important formatting instruction appears twice, once
 before the context block and once after it. The retrieved
 knowledge graph context sits in the middle. The model now
 attends to the instruction at both ends of the context window.
@@ -161,20 +163,20 @@ Section structure degradation dropped immediately.
 [arxiv.org/abs/2512.14982](https://arxiv.org/abs/2512.14982)
 
 **What it found:** Repeating the input prompt improves
-performance across popular models — Gemini, GPT, Claude,
-Deepseek — without increasing the number of generated tokens
+performance across popular models, Gemini, GPT, Claude,
+Deepseek, without increasing the number of generated tokens
 or adding any latency cost. The finding is simple and
 surprisingly powerful: just send the prompt twice.
 
 **Why we read it:** We were seeing formatting drift on our
 longest sections. The model would start a Functional
 Requirements table correctly and then gradually lose structure
-mid-section — dropping acceptance criteria columns, skipping
+mid-section, dropping acceptance criteria columns, skipping
 source attribution, reverting to prose. The context block was
 too long and the original instruction was washing out.
 
 **What we changed:** Every section prompt now sends the core
-instruction twice — once before the context block and once
+instruction twice, once before the context block and once
 after it, immediately before the generation boundary. The
 instruction the model sees last is the one it attends to most
 strongly. Combined with the sandwich pattern from the Lost in
@@ -184,7 +186,7 @@ added latency, measurable improvement in section structure.
 
 ---
 
-### 3. Large Language Models Are Zero-Shot Reasoners — Self-Consistency
+### 3. Large Language Models Are Zero-Shot Reasoners: Self-Consistency
 **Wang et al., Google Brain, 2022**
 [arxiv.org/abs/2203.11171](https://arxiv.org/abs/2203.11171)
 
@@ -197,8 +199,8 @@ generation pass.
 
 **Why we read it:** Functional Requirements was our most
 hallucination-prone section. The model would invent plausible
-sounding requirements — specific latency numbers, database
-capacities, compliance standards — that had no basis in the
+sounding requirements, specific latency numbers, database
+capacities, compliance standards, that had no basis in the
 source emails. One generation pass was not enough to catch
 these because they sounded entirely reasonable.
 
@@ -218,23 +220,23 @@ across all our test runs.
 
 **What it found:** Asking a model to write a dense, information-
 rich document in one pass produces lower quality output than
-separating the process into distinct passes — first extract
+separating the process into distinct passes, first extract
 the facts, then write prose from those facts. The two-pass
 approach produces documents that are more information-dense,
 more accurate, and better grounded in the source material.
 
 **Why we read it:** We were running all generation on Qwen
 32B and hitting two problems simultaneously. First, generation
-was slow — 20+ seconds per section with the full model doing
+was slow, 20+ seconds per section with the full model doing
 both fact extraction and writing in one pass. Second, the
 output quality was inconsistent because the model was context-
 switching between retrieval reasoning and formal writing in
 the same generation pass.
 
-**What we changed:** Pass 1 runs on Qwen 7B — lightweight,
+**What we changed:** Pass 1 runs on Qwen 7B, lightweight,
 80 tokens per second, extracts concrete facts, names, dates,
 numbers and stated requirements from the knowledge graph
-context. Pass 2 runs on Qwen 32B — writes formal BRD prose
+context. Pass 2 runs on Qwen 32B, writes formal BRD prose
 from that clean fact sheet rather than from raw email text.
 The result was 30% faster total generation because 7B is
 10x faster than 32B for the extraction pass, and the 32B
@@ -243,7 +245,7 @@ structured facts rather than noisy communications.
 
 This also solved our VRAM problem. 7B takes 5GB VRAM. 32B
 takes 21GB. Running them sequentially with an asyncio
-semaphore(3) keeps peak usage at 26GB — just within what
+semaphore(3) keeps peak usage at 26GB, just within what
 Ollama can gracefully manage on the RTX 4090.
 
 ---
@@ -258,14 +260,14 @@ Qwen 2.5 32B per active inference context:
 RTX 4090 available: 24GB VRAM
 
 Naive 8 sections simultaneously:
-  8 × 21GB = 168GB required
+  8 x 21GB = 168GB required
   Available =  24GB
   Result    =  immediate OOM crash
 ```
 
 Semaphore limiting alone was insufficient:
 ```
-2 concurrent × 21GB = 42GB
+2 concurrent x 21GB = 42GB
 Overflow to RAM      = 18GB
 Result               = 8 t/s degraded throughput
                        vs 25 t/s target
@@ -313,7 +315,7 @@ graph TD
         M -->|Graph| H
         F & H --> N["Context Aggregation"]
         N -->|BGE-M3 Reranking| O["Top K Chunks"]
-        O -->|DeepMind Prompt Repetition| R["Ollama: Qwen 2.5 32B"]
+        O -->|Prompt Repetition| R["Ollama: Qwen 2.5 32B"]
         R -->|WebSocket Streaming| S["Frontend UI"]
     end
 ```
@@ -326,41 +328,41 @@ Honest accounting of pipeline state during judging.
 
 ### Fully Operational
 
-LightRAG Knowledge Graph — entity extraction, relationship
+LightRAG Knowledge Graph, entity extraction, relationship
 mapping, conflict detection across documents
 
-Qwen 2.5 32B local inference via Ollama — 25 t/s sustained
+Qwen 2.5 32B local inference via Ollama, 25 t/s sustained
 
-Qwen 2.5 7B fast extraction pass — 80 t/s
+Qwen 2.5 7B fast extraction pass, 80 t/s
 
-BGE-M3 embeddings — 1024-dimensional dense vectors
+BGE-M3 embeddings, 1024-dimensional dense vectors
 
 BGE-Reranker-Large cross-encoder reranking
 
-FAISS vector store — semantic similarity retrieval
+FAISS vector store, semantic similarity retrieval
 
-Eight parallel WebSocket streams — simultaneous section
+Eight parallel WebSocket streams, simultaneous section
 generation
 
-All three research techniques — implemented and active
+All four research techniques, implemented and active
 
-Conflict detection — real contradictions found across
+Conflict detection, real contradictions found across
 Enron email threads
 
-Traceability matrix — JSON requirement-to-source mapping
+Traceability matrix, JSON requirement-to-source mapping
 
 ### Graceful Fallbacks
 
-MinerU vision parsing encountered environment issues —
+MinerU vision parsing encountered environment issues,
 fell back to standard text extraction cleanly
 
-Redis semantic caching hit free tier limits — system
+Redis semantic caching hit free tier limits, system
 routed entirely through LightRAG and FAISS with no
 measurable performance impact
 
 ---
 
-## Sample Output — Conflict Detection
+## Sample Output: Conflict Detection
 ```
 CONFLICT-1: Mobile Access Scope
   Stakeholders: Kenneth Lay vs Jeff Skilling
@@ -369,7 +371,7 @@ CONFLICT-1: Mobile Access Scope
   Jeff Skilling: "Mobile is out of scope for Phase 1.
                   Engineering cannot deliver mobile AND
                   authentication by December 31st."
-  Status:       [UNRESOLVED] — Resolution required by Friday
+  Status:       [UNRESOLVED] Resolution required by Friday
   Risk:         [HIGH]
 
 CONFLICT-2: Authentication Deadline
@@ -377,7 +379,7 @@ CONFLICT-2: Authentication Deadline
   Kenneth Lay:  Platform launch December 31st
   Jeff Skilling: January 15th proposed for Phase 1 auth only
   Status:       [UNRESOLVED]
-  Risk:         [HIGH] — On critical path for platform launch
+  Risk:         [HIGH] On critical path for platform launch
 ```
 
 ---
@@ -390,19 +392,19 @@ CONFLICT-2: Authentication Deadline
     {
       "req_id": "REQ-001",
       "description": "Platform must handle 50,000 concurrent users during peak trading hours.",
-      "source": "kenneth.lay@enron.com — Q4 Platform Strategy",
+      "source": "kenneth.lay@enron.com, Q4 Platform Strategy",
       "owner": "Enron Board"
     },
     {
       "req_id": "REQ-002",
       "description": "Real-time P&L display with data refresh under 500 milliseconds.",
-      "source": "louise.kitchen@enron.com — Dashboard Requirements",
+      "source": "louise.kitchen@enron.com, Dashboard Requirements",
       "owner": "Trading Floor"
     },
     {
       "req_id": "REQ-009",
       "description": "All financial transactions encrypted with AES-256.",
-      "source": "jeff.skilling@enron.com — Security Mandate",
+      "source": "jeff.skilling@enron.com, Security Mandate",
       "owner": "Security Team"
     }
   ]
@@ -416,8 +418,8 @@ CONFLICT-2: Authentication Deadline
 | Component | Technology |
 |---|---|
 | API Framework | FastAPI + Uvicorn |
-| LLM Inference | Ollama — Qwen 2.5 32B |
-| Fast Extraction | Ollama — Qwen 2.5 7B |
+| LLM Inference | Ollama, Qwen 2.5 32B |
+| Fast Extraction | Ollama, Qwen 2.5 7B |
 | Embeddings | BAAI/BGE-M3 |
 | Reranking | BGE-Reranker-Large |
 | Knowledge Graph | LightRAG |
@@ -466,7 +468,7 @@ The backend server has been taken offline after the competition.
 
 **Fourth place. HackFest 2.0, GDG Cloud New Delhi.**
 
-50 consecutive hours. Real Enron corpus — 500K emails filtered
+50 consecutive hours. Real Enron corpus, 500K emails filtered
 and ingested semantically. Real knowledge graph with entity
 conflict detection. Real local inference at 25 t/s. Professional
 8-section BRDs generated in under three minutes during live
