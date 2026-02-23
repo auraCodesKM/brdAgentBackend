@@ -1,6 +1,6 @@
 <div align="center">
 
-# BRD Agent — Backend
+# BRD Agent — Backend!
 
 **Graph-RAG Inference Engine for Automated Business Requirements Generation**
 
