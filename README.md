@@ -70,9 +70,12 @@ Frontend repo: [auraCodesKM/brdAgent](https://github.com/auraCodesKM/brdAgent)
 Congratulations to all the winners! 👏
 A big appreciation as well to the organizers for successfully hosting the event.
 
-The links to the winning projects will be updated as soon as they become available. You're welcome to congratulate the winners!
+The links to the winning projects are now available. You're welcome to congratulate the winners!
+- [SchemaDoc AI](https://www.commudle.com/builds/schemadoc-ai)
+- [Policy Pilot](https://www.commudle.com/builds/policypilot)
+- [Data Dictionary Agent](https://www.commudle.com/builds/data-dictionary-agent)
+
 Thank you for your attention.
-You can follow the details below.
 
 ---
 
