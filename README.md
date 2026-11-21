@@ -1,7 +1,21 @@
+<div align="center">
+
 # BRD Agent: Backend
 
 **Turns scattered emails and meeting notes into a structured, eight-section Business Requirements Document, using
 graph-based retrieval and local LLMs, streamed section by section to the UI.**
+
+[![frontend: Vercel](https://img.shields.io/badge/frontend-Vercel-000000?logo=vercel&logoColor=white)](https://brd-agent-cmka.vercel.app/)
+![HackFest: 2.0 · GDG Cloud New Delhi](https://img.shields.io/badge/HackFest-2.0%20%C2%B7%20GDG%20Cloud%20New%20Delhi-4285F4?logo=googlecloud&logoColor=white)
+
+![Python: 3](https://img.shields.io/badge/Python-3-3776AB?logo=python&logoColor=white)
+![FastAPI: WebSockets](https://img.shields.io/badge/FastAPI-WebSockets-009688?logo=fastapi&logoColor=white)
+![LightRAG: Graph RAG](https://img.shields.io/badge/LightRAG-Graph%20RAG-4CAF50)
+![Ollama: Qwen 2.5 7B · 32B](https://img.shields.io/badge/Ollama-Qwen%202.5%207B%20%C2%B7%2032B-000000?logo=ollama&logoColor=white)
+![BGE: M3 + reranker](https://img.shields.io/badge/BGE-M3%20%2B%20reranker-FFD21E?logo=huggingface&logoColor=white)
+![Redis: BM25](https://img.shields.io/badge/Redis-BM25-DC382D?logo=redis&logoColor=white)
+
+</div>
 
 Built in a team at HackFest 2.0 (GDG Cloud New Delhi). This repository is the Python backend; the Next.js frontend is
 deployed at [brd-agent-cmka.vercel.app](https://brd-agent-cmka.vercel.app/). All LLM inference, embeddings and
