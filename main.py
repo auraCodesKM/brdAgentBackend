@@ -6,7 +6,7 @@ import time
 import uvicorn
 
 from pipeline.ingestion import ingest_document
-from pipeline.generator import generate_brd_section, generate_full_brd
+from pipeline.generator import generate_brd_section, generate_full_brd, generate_section_edit
 from pipeline.conflict import detect_brd_conflicts
 from pipeline.traceability import generate_traceability_matrix
 from cache.redis_cache import redis_cache
