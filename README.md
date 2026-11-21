@@ -1,493 +1,88 @@
-<div align="center">
-
-# BRD Agent — Backend!
-
-**Graph-RAG Inference Engine for Automated Business Requirements Generation**
-
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org/)
-[![Ollama](https://img.shields.io/badge/Ollama-FFFFFF?style=for-the-badge&logo=Ollama&logoColor=black)](https://ollama.com/)
-[![LightRAG](https://img.shields.io/badge/LightRAG-4CAF50?style=for-the-badge)](https://github.com/LightRAG)
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/)
-
-*Built at HackFest 2.0, GDG Cloud New Delhi. 50 hours, zero sleep, fourth place.*
-
-</div>
-
----
-
-## About the Builder
-
-I am Kavin Thakur, second year CS student specialising in ML/AI
-at Chitkara University, currently working as Visiting Researcher (AI/ML) at
-National Ilan University in Taiwan. My research there focuses on
-real-time computer vision pipelines and edge AI inference on
-NVIDIA RTX 6000 HPC clusters. What I love about this hackathon
-project is how naturally it integrates everything I work on.
-Computer vision taught me how to think about feature extraction,
-RAG is just retrieval with a different modality, and the VRAM
-engineering is the same constraint-solving I do daily on HPC
-systems.
-
-Team M-2.5 built this backend from scratch over 50 consecutive
-hours at HackFest 2.0. Every architectural decision, the
-knowledge graph integration, the VRAM constraint engineering,
-the parallel WebSocket streaming, the research paper
-implementations, was designed and debugged under competition
-pressure with a live judging deadline.
-
-This is not the first system I have built under pressure. I won
-INR 1 Lakh at Swasth-a-thon building a medical voice pathology
-AI on-device with privacy constraints. I reached the national
-finals at AMD x IIT Bombay AI Sprint in the top 1.5% of 4000+
-entries building an LLM scheduling agent on MI300 GPUs. I lead
-IEEE CIET as Technical Head and serve as AI/ML Executive at GDG
-Chitkara. I also served as a Data Science Intern at Infomo
-Global after my first semester.
-
-I care about building things that actually work, not demos,
-not API wrappers, but real pipelines with real engineering
-decisions and real constraints behind them.
-
-If you are from Turgon AI and reading this while evaluating
-internship candidates, I would genuinely love to talk. Every
-component of this codebase is something I can explain, defend
-and improve. I have context on every decision made at 3 AM
-when it mattered.
-
-BACKEND REQUIRES 24 GB vRAM so it is off currently!
-
-[LinkedIn](https://www.linkedin.com/in/kavin070810/) ·
-[GitHub](https://github.com/auraCodesKM) ·
-[Resume](https://drive.google.com/file/d/1Z1Z0hZhWc8DTKY85Ac2_66sv-A6499Pr/view?usp=sharing)
-
-Frontend (live): [brd-agent-cmka.vercel.app](https://brd-agent-cmka.vercel.app/)
-
-Backend repo (this one): 100% Python.
-Frontend repo: [auraCodesKM/brdAgent](https://github.com/auraCodesKM/brdAgent)
-(private, DM for access)
-
-*Fourth place!*
-
-Congratulations to all the winners! 👏
-A big appreciation as well to the organizers for successfully hosting the event.
-
-The links to the winning projects are now available. You're welcome to congratulate the winners!
-- [SchemaDoc AI](https://www.commudle.com/builds/schemadoc-ai)
-- [Policy Pilot](https://www.commudle.com/builds/policypilot)
-- [Data Dictionary Agent](https://www.commudle.com/builds/data-dictionary-agent)
-
-Thank you for your attention.
-
----
-
-## What This Is
-
-BRD Agent transforms unstructured corporate communications,
-emails, meeting transcripts, Slack exports, into complete
-professional Business Requirements Documents. Eight sections.
-Under three minutes. Fully local. Zero external API calls.
-Zero data leakage.
-
-This repository is the backend inference engine, 100% Python.
-The frontend is Next.js with WebSocket streaming and Mermaid
-diagram rendering.
-
----
-
-## The Core Technical Problem
-
-Most RAG systems retrieve text and summarise it. That produces
-generic output that paraphrases the input.
-
-BRD generation requires something fundamentally different. The
-system must understand who said what, detect when two people
-contradict each other across separate documents, and produce
-formally structured output with every claim attributed to its
-source.
-
-We solved this with three components working together.
-
-**LightRAG Knowledge Graph** stores entities and relationships,
-not just text chunks. Kenneth Lay becomes a node. SSO becomes
-a node. The edge between them records that Kenneth Lay mandated
-SSO. When Jeff Skilling later states the SSO deadline is
-January 15th and Kenneth Lay said December 31st, the graph
-detects that contradiction structurally through traversal.
-Prompt engineering alone cannot do this.
-
-**A-RAG Parallel Fetch** hits FAISS dense vectors and the
-LightRAG graph simultaneously. Dense retrieval finds
-semantically similar chunks. Graph retrieval finds entity
-relationships. BGE-M3 cross-encoder reranks the merged results
-by relevance to the specific BRD section being generated.
-
-**Three research techniques** applied at generation time
-improve output quality measurably over baseline prompting,
-explained in full below.
-
----
-
-## Research Papers We Read and Why They Changed Our Architecture
-
-This section matters to me because these were not papers I
-cited for credibility. I read them during the hackathon because
-we had specific problems to solve and these papers had the
-answers. Each one directly changed how we built something.
-
----
-
-### 1. Lost in the Middle: How Language Models Use Long Contexts
-**Liu et al., Stanford / UC Berkeley, 2023**
-[arxiv.org/abs/2307.03172](https://arxiv.org/abs/2307.03172)
-
-**What it found:** When you give a language model a long context
-window, it pays strong attention to content at the very
-beginning and very end, and systematically ignores content
-in the middle. The paper measured this across multiple models
-and tasks and the degradation was severe and consistent.
-
-**Why we read it:** Our BRD sections require the model to
-process 35+ retrieved entities plus relationship context plus
-formatting instructions simultaneously. We were seeing the
-model produce well-formatted openings and then gradually lose
-structure mid-section, sometimes reverting to raw graph output
-halfway through a requirement list.
-
-**What we changed:** We restructured every prompt so that the
-most important formatting instruction appears twice, once
-before the context block and once after it. The retrieved
-knowledge graph context sits in the middle. The model now
-attends to the instruction at both ends of the context window.
-Section structure degradation dropped immediately.
-
----
-
-### 2. Prompt Repetition Improves Non-Reasoning LLMs
-**Leviathan, Kalman, Matias. Google, 2025**
-[arxiv.org/abs/2512.14982](https://arxiv.org/abs/2512.14982)
-
-**What it found:** Repeating the input prompt improves
-performance across popular models, Gemini, GPT, Claude,
-Deepseek, without increasing the number of generated tokens
-or adding any latency cost. The finding is simple and
-surprisingly powerful: just send the prompt twice.
-
-**Why we read it:** We were seeing formatting drift on our
-longest sections. The model would start a Functional
-Requirements table correctly and then gradually lose structure
-mid-section, dropping acceptance criteria columns, skipping
-source attribution, reverting to prose. The context block was
-too long and the original instruction was washing out.
-
-**What we changed:** Every section prompt now sends the core
-instruction twice, once before the context block and once
-after it, immediately before the generation boundary. The
-instruction the model sees last is the one it attends to most
-strongly. Combined with the sandwich pattern from the Lost in
-the Middle finding, formatting consistency across all eight
-sections became reliable rather than probabilistic. Zero
-added latency, measurable improvement in section structure.
-
----
-
-### 3. Large Language Models Are Zero-Shot Reasoners: Self-Consistency
-**Wang et al., Google Brain, 2022**
-[arxiv.org/abs/2203.11171](https://arxiv.org/abs/2203.11171)
-
-**What it found:** When a model generates the same answer
-multiple times with different random seeds, correct reasoning
-paths converge and incorrect hallucinated paths diverge.
-Taking the majority answer or intersection across multiple
-generations is significantly more reliable than any single
-generation pass.
-
-**Why we read it:** Functional Requirements was our most
-hallucination-prone section. The model would invent plausible
-sounding requirements, specific latency numbers, database
-capacities, compliance standards, that had no basis in the
-source emails. One generation pass was not enough to catch
-these because they sounded entirely reasonable.
-
-**What we changed:** Functional Requirements now generates
-twice at temperature 0.3 and temperature 0.7. A merge pass
-on Qwen 7B reads both outputs and retains only requirements
-that appear in both. A requirement that appears in only one
-generation is almost certainly hallucinated. The section went
-from regularly inventing 2-3 fabricated requirements to zero
-across all our test runs.
-
----
-
-### 4. Chain of Density Summarization
-**Adams et al., Columbia University / Salesforce Research, 2023**
-[arxiv.org/abs/2309.04269](https://arxiv.org/abs/2309.04269)
-
-**What it found:** Asking a model to write a dense, information-
-rich document in one pass produces lower quality output than
-separating the process into distinct passes, first extract
-the facts, then write prose from those facts. The two-pass
-approach produces documents that are more information-dense,
-more accurate, and better grounded in the source material.
-
-**Why we read it:** We were running all generation on Qwen
-32B and hitting two problems simultaneously. First, generation
-was slow, 20+ seconds per section with the full model doing
-both fact extraction and writing in one pass. Second, the
-output quality was inconsistent because the model was context-
-switching between retrieval reasoning and formal writing in
-the same generation pass.
-
-**What we changed:** Pass 1 runs on Qwen 7B, lightweight,
-80 tokens per second, extracts concrete facts, names, dates,
-numbers and stated requirements from the knowledge graph
-context. Pass 2 runs on Qwen 32B, writes formal BRD prose
-from that clean fact sheet rather than from raw email text.
-The result was 30% faster total generation because 7B is
-10x faster than 32B for the extraction pass, and the 32B
-writing quality improved because it was working from
-structured facts rather than noisy communications.
-
-This also solved our VRAM problem. 7B takes 5GB VRAM. 32B
-takes 21GB. Running them sequentially with an asyncio
-semaphore(3) keeps peak usage at 26GB, just within what
-Ollama can gracefully manage on the RTX 4090.
-
----
-
-## The VRAM Engineering
-```
-Qwen 2.5 32B per active inference context:
-  Model weights:    18GB VRAM
-  KV cache:          3GB VRAM
-  Total:            21GB VRAM
-
-RTX 4090 available: 24GB VRAM
-
-Naive 8 sections simultaneously:
-  8 x 21GB = 168GB required
-  Available =  24GB
-  Result    =  immediate OOM crash
-```
-
-Semaphore limiting alone was insufficient:
-```
-2 concurrent x 21GB = 42GB
-Overflow to RAM      = 18GB
-Result               = 8 t/s degraded throughput
-                       vs 25 t/s target
-```
-
-Chain of Density two-pass architecture solved it:
-```
-Pass 1  Qwen 7B   fact extraction
-        VRAM:      5GB
-        Speed:    80 t/s
-
-Pass 2  Qwen 32B  professional BRD writing
-        VRAM:     21GB
-        Speed:    25 t/s
-
-Peak with asyncio semaphore(3):
-  32B writing:    21GB
-  7B extracting:   5GB
-  Total:          26GB
-  Ollama offload:  2GB graceful RAM overflow
-  Result:         stable, no OOM, full throughput
-```
-
-First sections appear in 15 seconds.
-All 8 sections complete in under 3 minutes.
-30% faster than single-model approach.
-
----
-
-## System Architecture
-```mermaid
-graph TD
-    subgraph Ingestion["Index Time"]
-        A["Raw Doc: EML/PDF/CSV"] -->|Text Extraction| B["Clean Markdown"]
-        B -->|Semantic Sliding Window| C["Text Chunks"]
-        C -->|LightRAG Entity Extraction| D["Knowledge Graph Nodes/Edges"]
-        C --> F[("FAISS Dense Vectors")]
-        D --> H[("LightRAG Graph DB")]
-    end
-
-    subgraph Generation["Query Time"]
-        I["Client Query via REST/WS"] --> L["Query Formulation"]
-        L --> M["A-RAG Parallel Fetch"]
-        M -->|Dense| F
-        M -->|Graph| H
-        F & H --> N["Context Aggregation"]
-        N -->|BGE-M3 Reranking| O["Top K Chunks"]
-        O -->|Prompt Repetition| R["Ollama: Qwen 2.5 32B"]
-        R -->|WebSocket Streaming| S["Frontend UI"]
-    end
-```
-
----
-
-## What Actually Ran During Competition
-
-Honest accounting of pipeline state during judging.
-
-### Fully Operational
-
-LightRAG Knowledge Graph, entity extraction, relationship
-mapping, conflict detection across documents
-
-Qwen 2.5 32B local inference via Ollama, 25 t/s sustained
-
-Qwen 2.5 7B fast extraction pass, 80 t/s
-
-BGE-M3 embeddings, 1024-dimensional dense vectors
-
-BGE-Reranker-Large cross-encoder reranking
-
-FAISS vector store, semantic similarity retrieval
-
-Eight parallel WebSocket streams, simultaneous section
-generation
-
-All four research techniques, implemented and active
-
-Conflict detection, real contradictions found across
-Enron email threads
-
-Traceability matrix, JSON requirement-to-source mapping
-
-### Graceful Fallbacks
-
-MinerU vision parsing encountered environment issues,
-fell back to standard text extraction cleanly
-
-Redis semantic caching hit free tier limits, system
-routed entirely through LightRAG and FAISS with no
-measurable performance impact
-
----
-
-## Sample Output: Conflict Detection
-```
-CONFLICT-1: Mobile Access Scope
-  Stakeholders: Kenneth Lay vs Jeff Skilling
-  Kenneth Lay:  "Board requires mobile access for executives.
-                 iOS and Android apps needed immediately."
-  Jeff Skilling: "Mobile is out of scope for Phase 1.
-                  Engineering cannot deliver mobile AND
-                  authentication by December 31st."
-  Status:       [UNRESOLVED] Resolution required by Friday
-  Risk:         [HIGH]
-
-CONFLICT-2: Authentication Deadline
-  Stakeholders: Kenneth Lay vs Jeff Skilling
-  Kenneth Lay:  Platform launch December 31st
-  Jeff Skilling: January 15th proposed for Phase 1 auth only
-  Status:       [UNRESOLVED]
-  Risk:         [HIGH] On critical path for platform launch
-```
-
----
-
-## Traceability Output
-```json
-{
-  "status": "success",
-  "matrix": [
-    {
-      "req_id": "REQ-001",
-      "description": "Platform must handle 50,000 concurrent users during peak trading hours.",
-      "source": "kenneth.lay@enron.com, Q4 Platform Strategy",
-      "owner": "Enron Board"
-    },
-    {
-      "req_id": "REQ-002",
-      "description": "Real-time P&L display with data refresh under 500 milliseconds.",
-      "source": "louise.kitchen@enron.com, Dashboard Requirements",
-      "owner": "Trading Floor"
-    },
-    {
-      "req_id": "REQ-009",
-      "description": "All financial transactions encrypted with AES-256.",
-      "source": "jeff.skilling@enron.com, Security Mandate",
-      "owner": "Security Team"
-    }
-  ]
-}
-```
-
----
-
-## Stack
-
-| Component | Technology |
-|---|---|
-| API Framework | FastAPI + Uvicorn |
-| LLM Inference | Ollama, Qwen 2.5 32B |
-| Fast Extraction | Ollama, Qwen 2.5 7B |
-| Embeddings | BAAI/BGE-M3 |
-| Reranking | BGE-Reranker-Large |
-| Knowledge Graph | LightRAG |
-| Vector Store | FAISS |
-| Streaming | WebSockets |
-| Cache | Redis (Upstash) |
-| Hardware | NVIDIA RTX 4090 24GB |
-
----
-
-## Screenshots: The BRD Agent Frontend
-
-*(Note: While this repository houses the Python/FastAPI backend, the following screenshots showcase our custom-built Next.js frontend. Because the frontend repository is private, we are highlighting the complete user interface here to demonstrate the end-to-end capabilities of the BRD Agent.)*
-
-### 1. Landing Page
-
-The primary landing page introducing the BRD Agent. This page explains the capabilities of the system, including Advanced RAG operations, local 32B model inference, and the 500K+ Enron dataset processing.
+# BRD Agent: Backend
+
+**Graph-RAG backend that drafts Business Requirements Documents from unstructured emails and notes, fully on local models.**
+
+Built in a team at HackFest 2.0 (GDG Cloud New Delhi). This repository is the Python backend. The Next.js frontend is in a
+private repository; it is shown in the screenshots below and deployed at
+[brd-agent-cmka.vercel.app](https://brd-agent-cmka.vercel.app/). The backend needs a large local GPU and is offline.
+
+## The problem
+
+Requirements are scattered across emails, meeting notes and chat threads. Writing a Business Requirements Document (BRD)
+means finding who asked for what, noticing where two stakeholders contradict each other, and attributing every
+requirement to a source. Plain "retrieve and summarise" produces generic text that loses who said what.
+
+## What it does
+
+- **Ingests unstructured text.** Upload a file (`POST /api/ingest`) or post a raw email (`POST /ingest/email`; sender and
+  subject are parsed from the headers and kept as the source name).
+- **Builds a knowledge graph.** LightRAG extracts entities and relationships with `qwen2.5:32b` and stores them with
+  BGE-M3 embeddings (1024-d). Chunks are also indexed for BM25 keyword search in Redis.
+- **Retrieves from two sources in parallel.** LightRAG hybrid graph query + Redis BM25, merged by Reciprocal Rank Fusion
+  (k = 60), reranked by the BGE-reranker-large cross-encoder; the top 5 chunks become the context.
+- **Writes eight BRD sections.** Executive summary, business objectives, stakeholder analysis, functional and
+  non-functional requirements, assumptions, success metrics, timeline. Each has its own prompt, token cap (1,200–2,000)
+  and stop sequences at the other sections' headings.
+- **Routes by section type.** Five narrative sections run on `qwen2.5:7b`; functional requirements, non-functional
+  requirements and the timeline (table-heavy) run on `qwen2.5:32b`. At most three sections generate at once
+  (`asyncio.Semaphore(3)`).
+- **Streams to the UI.** Each section streams token by token over a WebSocket, with status lines (queued → retrieving →
+  writing).
+- **Repeats the instruction around the context.** Every section prompt puts the core instruction before and after the
+  retrieved context, following *Lost in the Middle* (Liu et al., 2023) and *Prompt Repetition Improves Non-Reasoning
+  LLMs* (Leviathan et al., 2025). The conflict and traceability prompts repeat the full instruction and context.
+- **Conflicts and traceability.** `GET /conflicts` and `GET /traceability` prompt the model over retrieved context and
+  return JSON (a conflict list, and a requirement → source → owner matrix). An unparseable answer returns an empty list.
+- **Edits a section.** `POST /api/generate/edit` rewrites one section from a natural-language request.
+
+## Screenshots
+
+These show the private Next.js frontend driving this backend. Some landing-page copy names features that are not enabled
+in this backend (MinerU parsing, CRAG); see [Not yet enabled](#not-yet-enabled).
+
+### Landing page
 
 ![Landing Page (Light Mode)](screenshots/05_Advanced_RAG_Business_Requirements.png)
 ![Landing Page (Dark Mode)](screenshots/04_Business_Requirements_Overview.png)
 
-### 2. Dashboard Overview
+### Dashboard
 
-The **Dashboard** is the central command center for the application. Here, users get a high-level overview of their generation workspace, including active RAG pipelines, processed documents, and quick links to Data Ingestion and BRD Generation.
+Overview of the workspace, with links to data ingestion and BRD generation.
 
 ![Dashboard Overview (Light Mode)](screenshots/01_BRD_Generator_Welcome_Overview.png)
 ![Dashboard Overview (Dark Mode)](screenshots/02_BRD_Generator_Welcome_DarkMode.png)
 
-### 3. Architecture & Capabilities
-
-This visually detailed section of the application breaks down the core components powering the backend, including the Qwen 32B Local Engine, MinerU Ingestion, CRAG Conflict Resolution, Traceability Matrices, and Instant Generation pipelines.
+### Architecture and components page
 
 ![Architecture Components](screenshots/06_BRD_Agent_Components.png)
 
-### 4. Data Ingestion Hub
+### Data ingestion
 
-The **Data Ingestion** interface where users can upload and process unstructured corporate data. The UI displays the active data streams being chunked and parsed into the LightRAG GraphDB and FAISS vector databases.
+Uploading unstructured documents into the graph and keyword indexes.
 
 ![Data Ingestion Hub](screenshots/03_Data_Ingestion_Hub_Active_Streams.png)
 
-### 5. BRD Generation Flow
+### Generation flow
 
-The onboarding user flow that outlines the intuitive three-step process for generating a complete Business Requirements Document: Select Pipelines, Run Generation, and Review the final structure.
+The three steps: select sources, run generation, review the document.
 
 ![Generation Flow (Dark Mode)](screenshots/07_Three_Steps_BRD_DarkMode.png)
 ![Generation Flow (Light Mode)](screenshots/08_Three_Steps_BRD_LightMode.png)
 
-### 6. Real-Time BRD Generator Interface
+### Live generation
 
-The core **BRD Generator** workspace. This is where parallel WebSocket connections stream the generated document sections in real-time. 
-
-When you press **Generate Document**, the system displays its internal retrieval and synthesis steps. You can watch word-by-word as the raw Markdown tokens stream down from the backend (with "thinking" steps like *Queueing*, *Retrieving corporate context...*, and *Synthesizing professional document block...*) and are instantly rendered into formatted UI components.
+Sections stream over parallel WebSockets, with the backend's status lines (*Queueing*, *Retrieving corporate context*,
+*Synthesizing*) shown before the text arrives.
 
 ![Generator Interface Overview (Light Mode)](screenshots/09_BRD_Agent_LightMode.png)
 ![Generator Interface Overview (Dark Mode)](screenshots/10_BRD_Agent_DarkMode.png)
-
 ![Real-Time Executive Summary Generation](screenshots/11_Executive_Summary_Dashboard.png)
 ![Real-Time Executive Summary Streaming](screenshots/12_Executive_Summary_MenuInterface.png)
 ![Real-Time Non-Functional Generation](screenshots/13_NonFunctionalRequirements_Details.png)
 
-### 7. Generated Document Detail Views
+### Generated document
 
-A deep dive into the perfectly rendered Markdown output generated by the RAG pipeline. These detail views showcase the system gracefully handling complex formatting like robust functional specifications, acceptance criteria tables, error handling metrics, and conflict resolutions.
+Rendered sections: functional specifications, acceptance criteria tables, conflicts.
 
 ![System Features 1](screenshots/14_SystemFeatures_DetailView_One.png)
 ![System Features 2](screenshots/15_SystemFeatures_DetailView_Two.png)
@@ -498,60 +93,134 @@ A deep dive into the perfectly rendered Markdown output generated by the RAG pip
 ![System Features 7](screenshots/20_SystemFeatures_DetailView_Seven.png)
 ![System Features 8](screenshots/21_SystemFeatures_DetailView_Eight.png)
 
-### 8. Project Diagrams
-
-Visualizations of the project architecture and the GDG Cloud HackFest contact information native to the presentation diagram.
+### Presentation diagram
 
 ![Project Diagrams](screenshots/22_Project_ContactInfo_Diagrams.jpg)
 
----
+## Architecture
 
-## Setup
+Dashed boxes are in the code but not active (see below).
+
+```mermaid
+graph TD
+    subgraph Ingestion["Index time"]
+        A["Email / text upload"] -->|"MinerU if installed, else UTF-8 text"| B["Clean text"]
+        B -->|"512-word window, 64 overlap"| C["Text chunks"]
+        B -->|"LightRAG entity extraction (Qwen 32B)"| D["Knowledge graph nodes/edges"]
+        D --> H[("LightRAG graph + BGE-M3 vectors")]
+        C --> K[("Redis BM25 index")]
+        C -.-> F[("FAISS: stub, not enabled")]
+    end
+
+    subgraph Generation["Query time"]
+        I["Section request via WebSocket / REST"] --> M["Parallel fetch"]
+        M -->|"hybrid graph query"| H
+        M -->|"keyword"| K
+        M -.-> F
+        H & K --> N["Reciprocal Rank Fusion"]
+        N -->|"BGE-reranker-large"| O["Top 5 chunks"]
+        O -->|"instruction before + after context"| R{"Section type"}
+        R -->|"narrative"| R7["Ollama: Qwen 2.5 7B"]
+        R -->|"tables"| R32["Ollama: Qwen 2.5 32B"]
+        R7 & R32 -->|"token stream"| S["Frontend UI"]
+    end
+```
+
+## Tech stack
+
+| Component | Used |
+|---|---|
+| API | FastAPI, Uvicorn, WebSockets |
+| LLM inference | Ollama (OpenAI-compatible API): `qwen2.5:32b`, `qwen2.5:7b` |
+| Knowledge graph | LightRAG (`lightrag-hku`) |
+| Embeddings | BAAI/BGE-M3 (FlagEmbedding) |
+| Reranking | BAAI/bge-reranker-large cross-encoder |
+| Keyword search | Redis with RediSearch (local Redis or Upstash, set in `.env`) |
+| Hardware | Developed on a 24 GB RTX 4090 under Windows |
+
+## Not yet enabled
+
+These are in the code but switched off or stubbed:
+
+| Technique | State in code |
+|---|---|
+| FAISS dense retrieval | `faiss_semantic_search` returns `[]` (`pipeline/retrieval.py`); FAISS is not a dependency |
+| CRAG query reformulation | `MAX_RETRIES = 0`, so low-relevance retrieval never retries |
+| HyDE | bypassed; the raw query is embedded directly |
+| HyPE (hypothetical questions per chunk) | questions are generated and embedded at ingest, but the embeddings are not stored or searched |
+| RAPTOR tree | placeholder; returns the raw chunks |
+| Semantic cache (RedisVL) | answers are written, but the cache read is disabled (`if False`) |
+| Whisper transcription | `whisper_engine.py` exists but nothing calls it |
+| Self-consistency, two-pass (7B facts → 32B prose) | removed during the hackathon to cut latency (commit `4bf2ee1`); each section is one pass |
+
+## Quickstart
+
+Needs Python, a GPU that can serve `qwen2.5:32b` through Ollama, and Redis with the search module. These steps were not
+re-run for this README (no GPU available); they match the code.
+
 ```bash
 git clone https://github.com/auraCodesKM/brdAgentBackend.git
 cd brdAgentBackend
-cp .env.example .env
-python download_models.py
-```
+python -m venv venv
+source venv/bin/activate            # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env                # Redis URL, HF cache, Ollama URL
+python download_models.py           # BGE-M3 and reranker (also fetches Whisper and a Qwen AWQ checkpoint the Ollama setup doesn't use)
 
-Pull models via Ollama:
-```powershell
 ollama pull qwen2.5:32b
 ollama pull qwen2.5:7b
-```
 
-Run the backend:
-```bash
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
 python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 1
 ```
 
-Verify the pipeline:
+Then:
+
 ```bash
 curl http://localhost:8000/health
+python test_ingest.py               # posts 10 sample emails; the helper scripts expect port 8001
 curl http://localhost:8000/conflicts
 curl http://localhost:8000/traceability
 ```
 
-**Minimum hardware: 24GB VRAM GPU.**
-The backend server has been taken offline after the competition.
+Windows notes: [`WINDOWS_SETUP.md`](WINDOWS_SETUP.md).
 
----
+### Sample data and outputs
 
-## Results
+`test_ingest.py` posts 10 short emails written for the demo, using Enron executives' names (deadline, SSO, mobile scope
+and performance requirements, with deliberate contradictions). `background_ingest.py` can instead feed up to 50
+keyword-matched emails from a local Enron email export (not in this repo). Outputs from runs during the hackathon are
+committed: [`raw_ingested_data.md`](raw_ingested_data.md) (graph context), [`audit_brd.md`](audit_brd.md) and
+[`full_audit_results.md`](full_audit_results.md) (full BRDs), and per-section checks such as
+[`timeline_verification.md`](timeline_verification.md).
 
-**Fourth place. HackFest 2.0, GDG Cloud New Delhi.**
+## Project structure
 
-50 consecutive hours. Real Enron corpus, 500K emails filtered
-and ingested semantically. Real knowledge graph with entity
-conflict detection. Real local inference at 25 t/s. Professional
-8-section BRDs generated in under three minutes during live
-judging.
+```
+main.py                 FastAPI app: ingest, WebSocket/REST generation, edit, conflicts, traceability, health
+pipeline/
+  ingestion.py          parse → chunk → LightRAG insert → BM25 index
+  rag_engine.py         LightRAG setup (Ollama, BGE-M3, reranker)
+  retrieval.py          parallel fetch, RRF merge, cross-encoder rerank
+  generator.py          section prompts, 7B/32B routing, streaming, edit
+  conflict.py           conflict report (JSON)
+  traceability.py       requirement → source matrix (JSON)
+models/                 Ollama client, BGE-M3 embedder, BGE reranker
+cache/                  Redis BM25 index, Redis semantic cache
+test_*.py               manual scripts against a running server (not an automated suite)
+app/                    early scaffold with mock routes; not used by main.py
+```
 
----
+## Limitations
 
-[LinkedIn](https://www.linkedin.com/in/kavin070810/) ·
-[GitHub](https://github.com/auraCodesKM) ·
-[Resume](https://drive.google.com/file/d/1Z1Z0hZhWc8DTKY85Ac2_66sv-A6499Pr/view?usp=sharing)
+- **No automated tests or evaluation.** The `test_*.py` files are manual scripts; output quality was checked by reading
+  the generated BRDs.
+- **The model can invent details.** One committed run ([`audit_brd.md`](audit_brd.md)) lists stakeholders ("John Doe",
+  "Jane Smith") who are not in the ingested emails. Nothing in the pipeline checks generated claims against the sources.
+- Conflicts are found by prompting over the top 5 chunks, not by graph traversal, so conflicts outside those chunks are
+  missed.
+- Traceability is model output; source attributions are not verified against chunk ids.
+- CORS allows every origin and there is no authentication; this is a local demo server.
+- `/health` returns fixed strings, and `/ingest/status` always reports completed.
+
+Next steps: verify each generated requirement against its cited chunk, finish FAISS retrieval or remove it, and add a
+small labelled set to measure conflict and traceability accuracy.
